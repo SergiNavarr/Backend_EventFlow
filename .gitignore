@@ -1,0 +1,83 @@
+## Compilación
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+
+## Archivos generados por Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.dbmdl
+*.dbproj.schemaview
+
+## Archivos de configuración locales
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+
+## Paquetes
+*.nupkg
+packages/
+*.snupkg
+
+## Archivos temporales
+*.tmp
+*.temp
+*.log
+*.tlog
+
+## Configuración de Rider / VS Code
+.idea/
+*.ipr
+*.iws
+*.iml
+
+.vscode/
+*.code-workspace
+
+## Publicaciones y artefactos
+publish/
+out/
+wwwroot/dist/
+wwwroot/node_modules/
+
+## Node (si usás front integrado o Swagger UI custom)
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+coverage/
+
+## Certificados locales usados por HTTPS en desarrollo
+*.pfx
+*.p12
+
+## Archivos de bloqueo
+*.lock.json
+project.lock.json
+
+## Docker
+*.pid
+docker-compose.override.yml
+
+## Sistema operativo
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+## Test y coverage
+TestResult*/
+TestResults/
+.coverage
+coverage.cobertura.xml
+*.coverage
+*.coveragexml
+
+## Otros
+*.vsidx
+*.db

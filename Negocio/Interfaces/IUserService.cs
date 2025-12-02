@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Datos.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,17 @@ namespace Negocio.Interfaces
 {
     public interface IUserService
     {
+        // 1. REGISTRO
+        // Recibe los datos, crea el usuario y guarda en BD.
+        // No devuelve nada (Task), pero si falla lanzará una Excepción.
+        Task RegisterAsync(UserRegisterDto dto);
 
+        // 2. LOGIN
+        // Recibe email/pass y devuelve el objeto completo con el Token y datos básicos.
+        Task<AuthResponseDto> LoginAsync(UserLoginDto dto);
+
+        // 3. PERFIL
+        // Recibe un ID y devuelve los datos públicos del usuario (incluyendo contadores de seguidores).
+        Task<UserProfileDto> GetByIdAsync(int userId);
     }
 }

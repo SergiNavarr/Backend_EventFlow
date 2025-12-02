@@ -20,6 +20,7 @@ namespace Datos.Data
         public DbSet<UserCommunity> UserCommunities { get; set; }
         public DbSet<EventAttendee> EventAttendees { get; set; }
         public DbSet<PostLike> PostLikes { get; set; }
+        public DbSet<UserFollow> UserFollows { get; set; }
 
         // Chat
         public DbSet<EventChatMessage> EventChatMessages { get; set; }
@@ -109,6 +110,26 @@ namespace Datos.Data
                 .HasForeignKey(p => p.EventId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // --- CONFIGURACIÓN DE SEGUIDORES ---
+
+            // 1. Clave Compuesta (Evita que sigas a la misma persona 2 veces)
+            modelBuilder.Entity<UserFollow>()
+                .HasKey(uf => new { uf.FollowerId, uf.FollowedId });
+
+            // 2. Relación: "Gente que yo sigo" (Following)
+            modelBuilder.Entity<UserFollow>()
+                .HasOne(uf => uf.Follower)
+                .WithMany(u => u.Following)
+                .HasForeignKey(uf => uf.FollowerId)
+                .OnDelete(DeleteBehavior.Restrict); // IMPORTANTE: Restrict
+
+            // 3. Relación: "Gente que me sigue" (Followers)
+            modelBuilder.Entity<UserFollow>()
+                .HasOne(uf => uf.Followed)
+                .WithMany(u => u.Followers)
+                .HasForeignKey(uf => uf.FollowedId)
+                .OnDelete(DeleteBehavior.Restrict); // IMPORTANTE: Restrict
 
         }
     }

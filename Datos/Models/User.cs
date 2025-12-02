@@ -42,5 +42,12 @@ namespace Datos.Models
         public ICollection<Post> Posts { get; set; } = new List<Post>();
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public ICollection<PostLike> Likes { get; set; } = new List<PostLike>();
+
+        // --- Relaciones de seguimiento (Followers/Following) ---
+        // Gente a la que YO sigo (Following)
+        public ICollection<UserFollow> Following { get; set; } = new List<UserFollow>();
+
+        // Gente que ME sigue a mí (Followers)
+        public ICollection<UserFollow> Followers { get; set; } = new List<UserFollow>();
     }
 }

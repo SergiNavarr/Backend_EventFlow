@@ -1,5 +1,11 @@
 using Datos.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Negocio.Services;
+using Negocio.Interfaces;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,12 +16,34 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 var connectionString = builder.Configuration.GetConnectionString("CadenaConexionPostgres");
 
 builder.Services.AddDbContext<EventflowDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
 });
+
+var key = builder.Configuration["Jwt:Key"];
+
+builder.Services.AddAuthentication(config => {
+    config.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(config => {
+    config.RequireHttpsMetadata = false;
+    config.SaveToken = true;
+    config.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+        ValidateIssuer = false, // Por ahora false para facilitar pruebas locales
+        ValidateAudience = false // Por ahora false para facilitar pruebas locales
+    };
+});
+
+//Agregacion de servicios propios
+builder.Services.AddScoped<IUserService, UserService>();
+
 
 var app = builder.Build();
 
@@ -27,6 +55,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

@@ -44,6 +44,7 @@ builder.Services.AddAuthentication(config => {
 //Agregacion de servicios propios
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
+builder.Services.AddScoped<IPostService, PostService>();
 
 var app = builder.Build();
 

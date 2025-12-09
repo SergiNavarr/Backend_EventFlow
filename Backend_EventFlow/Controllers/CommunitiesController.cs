@@ -84,5 +84,44 @@ namespace Backend_EventFlow.Controllers
             var list = await _communityService.GetCommunitiesByUserAsync(userId);
             return Ok(list);
         }
+
+        //5.UNIRSE A COMUNIDAD
+        // POST: api/communities/5/join
+        [HttpPost("{id}/join")]
+        public async Task<IActionResult> Join(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                await _communityService.JoinCommunityAsync(id, userId);
+
+                return Ok(new { message = "Te has unido a la comunidad exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                // Devolvemos 400 Bad Request si ya era miembro
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        //6. SALIR DE COMUNIDAD
+        // POST: api/communities/5/leave
+        [HttpPost("{id}/leave")]
+        public async Task<IActionResult> Leave(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                await _communityService.LeaveCommunityAsync(id, userId);
+
+                return Ok(new { message = "Has salido de la comunidad." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

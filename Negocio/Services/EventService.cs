@@ -164,6 +164,68 @@ namespace Negocio.Services
             }
         }
 
+        // Actualizar evento
+        public async Task<EventDto> UpdateEventAsync(int eventId, UpdateEventDto dto, int userId)
+        {
+            var evt = await _context.Events
+                .Include(e => e.Organizer) 
+                .Include(e => e.Community)
+                .FirstOrDefaultAsync(e => e.Id == eventId);
+
+            if (evt == null) throw new Exception("Evento no encontrado.");
+
+            // VALIDACIÓN DE DUEÑO
+            if (evt.OrganizerId != userId)
+            {
+                throw new Exception("No tienes permiso para modificar este evento.");
+            }
+
+            // Validar fechas
+            if (dto.EndDateTime.HasValue && dto.StartDateTime > dto.EndDateTime.Value)
+            {
+                throw new Exception("La fecha de inicio no puede ser posterior al fin.");
+            }
+
+            // Actualizamos campos
+            evt.Title = dto.Title;
+            evt.Description = dto.Description;
+            evt.StartDateTime = dto.StartDateTime;
+            evt.EndDateTime = dto.EndDateTime;
+            evt.Location = dto.Location;
+            evt.IsOnline = dto.IsOnline;
+            evt.CoverImageUrl = dto.CoverImageUrl;
+            evt.MaxAttendees = dto.MaxAttendees;
+            evt.UpdatedAt = DateTime.UtcNow; 
+
+            await _context.SaveChangesAsync();
+
+            // Contamos asistentes para devolver el DTO bien formado
+            int attendeesCount = await _context.EventAttendees.CountAsync(ea => ea.EventId == eventId);
+
+            // Retornamos el DTO actualizado
+            return MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, attendeesCount, null);
+        }
+
+        //Borrar evento
+        public async Task DeleteEventAsync(int eventId, int userId)
+        {
+            var evt = await _context.Events.FindAsync(eventId);
+
+            if (evt == null) throw new Exception("Evento no encontrado.");
+
+            // VALIDACIÓN DE DUEÑO
+            if (evt.OrganizerId != userId)
+            {
+                throw new Exception("No tienes permiso para eliminar este evento.");
+            }
+
+            // Soft Delete (Lo desactivamos en lugar de borrarlo físicamente)
+            evt.IsActive = false;
+            evt.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
+
         // --- Helper Privado ---
         private EventDto MapToDto(Event e, string orgName, string? communityName, int attendeesCount, string? myStatus)
         {

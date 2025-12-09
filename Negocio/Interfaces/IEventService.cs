@@ -26,5 +26,11 @@ namespace Negocio.Interfaces
 
         // Salirse del evento (Botón "Leave")
         Task LeaveEventAsync(int eventId, int userId);
+
+        // Actualizar evento
+        Task<EventDto> UpdateEventAsync(int eventId, UpdateEventDto dto, int userId);
+
+        // Eliminar evento (soft delete)
+        Task DeleteEventAsync(int eventId, int userId);
     }
 }

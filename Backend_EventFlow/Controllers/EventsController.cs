@@ -105,5 +105,50 @@ namespace Backend_Eventflow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // 6. ACTUALIZAR EVENTO
+        // PUT: api/events/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDto dto)
+        {
+            try
+            {
+                // Sacamos el ID del usuario del Token
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                var updatedEvent = await _eventService.UpdateEventAsync(id, dto, userId);
+
+                return Ok(updatedEvent);
+            }
+            catch (Exception ex)
+            {
+                // Si el error es "No tienes permiso", deberíamos devolver 403, 
+                // pero por simplicidad usaremos BadRequest 
+                if (ex.Message.Contains("permiso")) return StatusCode(403, new { message = ex.Message });
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        //7. ELIMINAR EVENTO
+        // DELETE: api/events/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                await _eventService.DeleteEventAsync(id, userId);
+
+                return Ok(new { message = "Evento eliminado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("permiso")) return StatusCode(403, new { message = ex.Message });
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

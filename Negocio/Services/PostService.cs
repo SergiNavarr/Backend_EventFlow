@@ -92,6 +92,17 @@ namespace Negocio.Services
         // 3. POSTS DE UNA COMUNIDAD
         public async Task<List<PostDto>> GetPostsByCommunity(int communityId, int currentUserId)
         {
+            // ¿La comunidad existe y está activa?
+            bool communityExists = await _context.Communities
+                .AnyAsync(c => c.Id == communityId && c.IsActive);
+
+            if (!communityExists)
+            {
+                // Lanzamos la excepción para cortar la ejecución aquí mismo.
+                // El controlador capturará esto y devolverá un error 
+                throw new Exception("La comunidad no existe o ha sido eliminada.");
+            }
+
             var posts = await _context.Posts
                 .Include(p => p.Author)
                 .Include(p => p.Community)
@@ -108,6 +119,15 @@ namespace Negocio.Services
         // 4. POSTS DE UN EVENTO
         public async Task<List<PostDto>> GetPostsByEvent(int eventId, int currentUserId)
         {
+            // Verificamos si el evento existe y sigue activo (no cancelado/borrado)
+            bool eventExists = await _context.Events
+                .AnyAsync(e => e.Id == eventId && e.IsActive);
+
+            if (!eventExists)
+            {
+                throw new Exception("El evento no existe o ha sido eliminado.");
+            }
+
             var posts = await _context.Posts
                 .Include(p => p.Author)
                 .Include(p => p.Community)
@@ -186,6 +206,10 @@ namespace Negocio.Services
         }
         public async Task<List<CommentDto>> GetComments(int postId)
         {
+            // Verificamos que el post exista y esté activo antes de dar sus comentarios
+            var postExists = await _context.Posts.AnyAsync(p => p.Id == postId && p.IsActive);
+            if (!postExists) throw new Exception("Post no encontrado.");
+
             return await _context.Comments
                 .Where(c => c.PostId == postId && c.IsActive)
                 .Include(c => c.Author)
@@ -203,6 +227,56 @@ namespace Negocio.Services
         }
         //
 
+
+        // 7. ACTUALIZAR POST
+        public async Task<PostDto> UpdatePost(int postId, UpdatePostDto dto, int userId)
+        {
+            var post = await _context.Posts
+                .Include(p => p.Author) // Incluimos para el mapeo final
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post == null) throw new Exception("Post no encontrado.");
+
+            // VALIDACIÓN DE AUTOR
+            if (post.AuthorId != userId)
+            {
+                throw new Exception("No tienes permiso para editar este post.");
+            }
+
+            // Actualizar datos
+            post.Content = dto.Content;
+            post.ImageUrl = dto.ImageUrl;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Devolvemos el DTO actualizado reutilizando el helper
+            return ConvertToDto(post, userId);
+        }
+
+        // 8. BORRAR POST
+        public async Task DeletePost(int postId, int userId)
+        {
+            var post = await _context.Posts.FindAsync(postId);
+
+            if (post == null) throw new Exception("Post no encontrado.");
+
+            // VALIDACIÓN DE AUTOR
+            if (post.AuthorId != userId)
+            {
+                throw new Exception("No tienes permiso para eliminar este post.");
+            }
+
+            // SOFT DELETE
+            post.IsActive = false;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
 
         // --- MÉTODOS PRIVADOS DE AYUDA ---
 

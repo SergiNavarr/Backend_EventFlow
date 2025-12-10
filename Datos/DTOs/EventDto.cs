@@ -22,18 +22,17 @@ namespace Datos.DTOs
 
         // Organizador
         public int OrganizerId { get; set; }
-        public string OrganizerName { get; set; } // "Juan Perez"
+        public string OrganizerName { get; set; } 
         public string? OrganizerAvatar { get; set; }
 
         // Comunidad (Puede ser nulo)
         public int? CommunityId { get; set; }
-        public string? CommunityName { get; set; } // "Club de Lectura"
+        public string? CommunityName { get; set; } 
 
         // Estadísticas
         public int AttendeesCount { get; set; } // Cuántos van
 
-        // Estado del usuario actual (útil para el botón "Asistir")
-        // Puede ser: "Going", "Maybe", "NotGoing" o null
+        // Estado del usuario actual 
         public string? MyRsvpStatus { get; set; }
     }
 }

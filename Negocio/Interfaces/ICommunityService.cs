@@ -31,5 +31,11 @@ namespace Negocio.Interfaces
 
         // 6. SALIR DE COMUNIDAD
         Task LeaveCommunityAsync(int communityId, int userId);
+
+        // 8. ACTUALIZAR COMUNIDAD
+        Task<CommunityDto> UpdateCommunityAsync(int id, UpdateCommunityDto dto, int userId);
+
+        // 9. BORRAR COMUNIDAD (Soft Delete)
+        Task DeleteCommunityAsync(int id, int userId);
     }
 }

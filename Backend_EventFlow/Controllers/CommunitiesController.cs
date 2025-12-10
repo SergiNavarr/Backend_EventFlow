@@ -123,5 +123,43 @@ namespace Backend_EventFlow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        //7. ACTUALIZAR COMUNIDAD
+        // PUT: api/communities/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateCommunityDto dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                var result = await _communityService.UpdateCommunityAsync(id, dto, userId);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        //8. ELIMINAR COMUNIDAD
+        // DELETE: api/communities/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                await _communityService.DeleteCommunityAsync(id, userId);
+
+                return Ok(new { message = "Comunidad eliminada correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

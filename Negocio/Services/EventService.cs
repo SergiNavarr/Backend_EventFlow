@@ -29,10 +29,20 @@ namespace Negocio.Services
                 throw new Exception("La fecha de inicio no puede ser posterior a la fecha de fin.");
             }
 
-            // Validar que la fecha no sea en el pasado (Opcional)
+            // Validar que la fecha no sea en el pasado 
             if (dto.StartDateTime < DateTime.UtcNow)
             {
                 throw new Exception("No puedes crear eventos en el pasado.");
+            }
+
+            //Validar comunidad si es que se proporciona
+            if (dto.CommunityId.HasValue)
+            {
+                bool communityExists = await _context.Communities
+                    .AnyAsync(c => c.Id == dto.CommunityId && c.IsActive);
+
+                if (!communityExists)
+                    throw new Exception("No puedes crear un evento en una comunidad eliminada.");
             }
 
             var newEvent = new Event
@@ -67,7 +77,7 @@ namespace Negocio.Services
             var evt = await _context.Events
                 .Include(e => e.Organizer)
                 .Include(e => e.Community)
-                .FirstOrDefaultAsync(e => e.Id == eventId);
+                .FirstOrDefaultAsync(e => e.Id == eventId && e.IsActive);
 
             if (evt == null) throw new Exception("Evento no encontrado.");
 
@@ -105,30 +115,27 @@ namespace Negocio.Services
             var result = new List<EventDto>();
             foreach (var evt in events)
             {
-                // Nota: En listados masivos, a veces se evita contar uno por uno por rendimiento.
-                // Aquí lo hacemos simple.
                 int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
 
-                // En el listado general, no calculamos "MyRsvpStatus" para ahorrar recursos
                 result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, null));
             }
 
             return result;
         }
 
-        // 4. UNIRSE (JOIN) - Lógica Opción B
+        // 4. UNIRSE (JOIN) 
         public async Task JoinEventAsync(int eventId, int userId)
         {
             var evt = await _context.Events.FindAsync(eventId);
-            if (evt == null) throw new Exception("Evento no encontrado.");
+            if (evt == null || !evt.IsActive ) throw new Exception("Evento no encontrado.");
 
-            // A. Verificar si ya estoy unido
+            // Verificar si ya estoy unido
             bool alreadyJoined = await _context.EventAttendees
                 .AnyAsync(ea => ea.EventId == eventId && ea.UserId == userId);
 
-            if (alreadyJoined) return; // Si ya estoy, no hago nada (Idempotencia)
+            if (alreadyJoined) return; // Si ya estoy, no hago nada 
 
-            // B. Verificar Cupos (MaxAttendees)
+            // Verificar Cupos (MaxAttendees)
             if (evt.MaxAttendees.HasValue)
             {
                 int currentCount = await _context.EventAttendees.CountAsync(ea => ea.EventId == eventId);
@@ -138,7 +145,7 @@ namespace Negocio.Services
                 }
             }
 
-            // C. Crear la relación
+            // Crear la relación
             var attendee = new EventAttendee
             {
                 EventId = eventId,

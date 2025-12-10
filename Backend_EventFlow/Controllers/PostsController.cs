@@ -65,18 +65,32 @@ namespace Backend_EventFlow.Controllers
         [HttpGet("community/{communityId}")]
         public async Task<IActionResult> GetByCommunity(int communityId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            try 
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
             var posts = await _postService.GetPostsByCommunity(communityId, userId);
             return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // GET: api/posts/event/{id}
         [HttpGet("event/{eventId}")]
         public async Task<IActionResult> GetByEvent(int eventId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
             var posts = await _postService.GetPostsByEvent(eventId, userId);
             return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST: api/posts/{id}/like
@@ -117,8 +131,49 @@ namespace Backend_EventFlow.Controllers
         [HttpGet("{id}/comments")]
         public async Task<IActionResult> GetComments(int id)
         {
-            var comments = await _postService.GetComments(id);
-            return Ok(comments);
+            try
+            {
+                var comments = await _postService.GetComments(id);
+                return Ok(comments);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // PUT: api/posts/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdatePostDto dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var updatedPost = await _postService.UpdatePost(id, dto, userId);
+                return Ok(updatedPost);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("permiso")) return StatusCode(403, new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // DELETE: api/posts/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                await _postService.DeletePost(id, userId);
+                return Ok(new { message = "Post eliminado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("permiso")) return StatusCode(403, new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

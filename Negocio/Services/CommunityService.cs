@@ -24,13 +24,13 @@ namespace Negocio.Services
         // 1. CREAR COMUNIDAD
         public async Task<CommunityDto> CreateCommunityAsync(CreateCommunityDto dto, int userId)
         {
-            // 1. Validaciones previas...
+            // 1. Validaciones previas
             if (await _context.Communities.AnyAsync(c => c.Name == dto.Name))
             {
                 throw new Exception("Ya existe una comunidad con este nombre.");
             }
 
-            // 2. Crear la Comunidad (La "Casa")
+            // 2. Crear la Comunidad 
             var community = new Community
             {
                 Name = dto.Name,
@@ -42,9 +42,6 @@ namespace Negocio.Services
             };
 
             _context.Communities.Add(community);
-
-            // GUARDAMOS AHORA para que Postgres genere el ID de la comunidad
-            await _context.SaveChangesAsync();
 
             // 3. Crear la Membresía 
             var membership = new UserCommunity
@@ -94,7 +91,7 @@ namespace Negocio.Services
         {
             var community = await _context.Communities
                 .Include(c => c.Owner)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
             if (community == null)
             {
@@ -147,10 +144,10 @@ namespace Negocio.Services
     public async Task JoinCommunityAsync(int communityId, int userId)
     {
         // A. Validar que la comunidad exista
-        bool communityExists = await _context.Communities.AnyAsync(c => c.Id == communityId);
+        bool communityExists = await _context.Communities.AnyAsync(c => c.Id == communityId && c.IsActive);
         if (!communityExists) throw new Exception("Comunidad no encontrada.");
 
-        // B. Validar si YA es miembro (La validación que pediste)
+        // B. Validar si YA es miembro 
         bool isMember = await _context.UserCommunities
             .AnyAsync(uc => uc.CommunityId == communityId && uc.UserId == userId);
 
@@ -199,5 +196,63 @@ namespace Negocio.Services
             throw new Exception("No eres miembro de esta comunidad.");
         }
     }
-}
+
+        // 7. ACTUALIZAR COMUNIDAD
+        public async Task<CommunityDto> UpdateCommunityAsync(int id, UpdateCommunityDto dto, int userId)
+        {
+            var community = await _context.Communities
+                .Include(c => c.Owner)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (community == null) throw new Exception("Comunidad no encontrada.");
+
+            // VALIDACIÓN DE DUEÑO
+            if (community.OwnerId != userId)
+            {
+                throw new Exception("No tienes permiso para modificar esta comunidad.");
+            }
+
+            // Validación de Nombre Duplicado 
+            // Si cambia el nombre, verificamos que el nuevo nombre no esté ocupado por OTRO
+            if (community.Name != dto.Name)
+            {
+                bool nameExists = await _context.Communities.AnyAsync(c => c.Name == dto.Name);
+                if (nameExists) throw new Exception("Ya existe una comunidad con ese nombre.");
+            }
+
+            // Actualizar datos
+            community.Name = dto.Name;
+            community.Description = dto.Description;
+            community.CoverImageUrl = dto.CoverImageUrl;
+            community.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Recalcular miembros para devolver el DTO
+            int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == id);
+
+            return MapToDto(community, community.Owner.Username, members);
+        }
+
+        // 8. BORRAR COMUNIDAD 
+        public async Task DeleteCommunityAsync(int id, int userId)
+        {
+            var community = await _context.Communities.FindAsync(id);
+
+            if (community == null) throw new Exception("Comunidad no encontrada.");
+
+            // VALIDACIÓN DE DUEÑO
+            if (community.OwnerId != userId)
+            {
+                throw new Exception("No tienes permiso para eliminar esta comunidad.");
+            }
+
+            // SOFT DELETE (Borrado Lógico)
+            // No la borramos físicamente para mantener historial 
+            community.IsActive = false;
+            community.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
+    }
 }

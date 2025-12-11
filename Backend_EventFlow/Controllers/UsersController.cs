@@ -63,31 +63,20 @@ namespace Backend_EventFlow.Controllers
             }
         }
 
-        // PUT: api/users/profile
-        [HttpPut("profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateDto dto)
+        // PUT: api/users/change-password
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] Datos.DTOs.ChangePasswordDto dto)
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-                var updatedProfile = await _userService.UpdateUser(userId, dto);
-                return Ok(updatedProfile);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null) return Unauthorized();
 
-        // DELETE: api/users/profile
-        [HttpDelete("profile")]
-        public async Task<IActionResult> DeleteAccount()
-        {
-            try
-            {
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-                await _userService.DeleteUser(userId);
-                return Ok(new { message = "Tu cuenta ha sido eliminada correctamente." });
+                int userId = int.Parse(userIdClaim.Value);
+
+                await _userService.ChangePassword(userId, dto);
+
+                return Ok(new { message = "Contraseña actualizada correctamente" });
             }
             catch (Exception ex)
             {

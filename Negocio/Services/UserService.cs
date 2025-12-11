@@ -166,5 +166,99 @@ namespace Negocio.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public async Task ChangePassword(int userId, ChangePasswordDto dto)
+        {
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                throw new Exception("Usuario no encontrado");
+            }
+            // Usamos BCrypt para comparar el texto plano con el hash guardado
+            if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            {
+                throw new Exception("La contraseña actual es incorrecta");
+            }
+
+            // encriptamos la nueva
+            string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+            user.PasswordHash = newPasswordHash;
+
+            user.UpdatedAt = DateTime.UtcNow; 
+
+            await _context.SaveChangesAsync();
+        }
+        public async Task<string> GenerateRecoveryToken(ForgotPasswordDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+            {
+                // Por seguridad no decimos si el email existe o no
+                throw new Exception("Si el correo existe, se enviarán las instrucciones.");
+            }
+
+            // se genera un token JWT para recuperación (dura 15 min)
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = System.Text.Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim("purpose", "password_reset")
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+                Issuer = _config["Jwt:Issuer"],
+                Audience = _config["Jwt:Audience"]
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        public async Task ResetPasswordWithToken(ResetPasswordDto dto)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = System.Text.Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
+
+            try
+            {
+                tokenHandler.ValidateToken(dto.Token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = _config["Jwt:Issuer"], 
+                    ValidateAudience = true,
+                    ValidAudience = _config["Jwt:Audience"],
+                    ClockSkew = TimeSpan.Zero 
+                }, out SecurityToken validatedToken);
+
+                var jwtToken = (JwtSecurityToken)validatedToken;
+
+                var purposeClaim = jwtToken.Claims.First(c => c.Type == "purpose").Value;
+                if (purposeClaim != "password_reset")
+                    throw new Exception("Token inválido.");
+                
+                var userId = int.Parse(jwtToken.Claims.First(c => c.Type == "nameid" || c.Type == ClaimTypes.NameIdentifier).Value);
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null) 
+                    throw new Exception("No se encontró el usuario.");
+
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                throw new Exception("El enlace de recuperación es inválido o ha expirado.");
+            }
+        }
+
     }
 }

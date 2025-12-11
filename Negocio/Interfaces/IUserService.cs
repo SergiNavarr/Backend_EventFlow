@@ -22,10 +22,16 @@ namespace Negocio.Interfaces
         // Recibe un ID y devuelve los datos públicos del usuario (incluyendo contadores de seguidores).
         Task<UserProfileDto> GetById(int userId);
 
-        // Actualiza perfil (Bio, Avatar)
-        Task<UserProfileDto> UpdateUser(int userId, UserUpdateDto dto);
+        // 4. CAMBIO DE CONTRASEÑA
+        // Recibe el ID del usuario y los datos necesarios para el cambio de contraseña.
+        Task ChangePassword(int userId, ChangePasswordDto dto);
 
-        // Borrado lógico de la cuenta
-        Task DeleteUser(int userId);
+        // 5. RECUPERAR CONTRASEÑA
+        // Recibe el email y devuelve un token para resetear la contraseña.
+        Task<string> GenerateRecoveryToken(ForgotPasswordDto dto);
+
+        // 6. RESETEAR CONTRASEÑA
+        // Recibe el token y la nueva contraseña para actualizarla en BD.
+        Task ResetPasswordWithToken(ResetPasswordDto dto);
     }
 }

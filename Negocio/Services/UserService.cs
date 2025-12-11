@@ -259,6 +259,5 @@ namespace Negocio.Services
                 throw new Exception("El enlace de recuperación es inválido o ha expirado.");
             }
         }
-
     }
 }

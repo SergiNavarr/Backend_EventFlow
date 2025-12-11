@@ -33,5 +33,11 @@ namespace Negocio.Interfaces
         // 6. RESETEAR CONTRASEÑA
         // Recibe el token y la nueva contraseña para actualizarla en BD.
         Task ResetPasswordWithToken(ResetPasswordDto dto);
+
+        // 7. ACTUALIZAR PERFIL
+        Task<UserProfileDto> UpdateUser(int userId, UserUpdateDto dto);
+
+        // 8. BORRADO LOGICO DE USUARIO
+        Task DeleteUser(int userId);
     }
 }

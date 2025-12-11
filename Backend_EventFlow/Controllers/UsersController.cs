@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Datos.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Negocio.Interfaces;
 using System.Security.Claims;
@@ -59,6 +60,38 @@ namespace Backend_EventFlow.Controllers
             catch (Exception ex)
             {
                 return NotFound(new { message = "Usuario no encontrado" });
+            }
+        }
+
+        // PUT: api/users/profile
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateDto dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var updatedProfile = await _userService.UpdateUser(userId, dto);
+                return Ok(updatedProfile);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // DELETE: api/users/profile
+        [HttpDelete("profile")]
+        public async Task<IActionResult> DeleteAccount()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                await _userService.DeleteUser(userId);
+                return Ok(new { message = "Tu cuenta ha sido eliminada correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

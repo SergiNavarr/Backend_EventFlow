@@ -21,5 +21,11 @@ namespace Negocio.Interfaces
         // 3. PERFIL
         // Recibe un ID y devuelve los datos públicos del usuario (incluyendo contadores de seguidores).
         Task<UserProfileDto> GetById(int userId);
+
+        // Actualiza perfil (Bio, Avatar)
+        Task<UserProfileDto> UpdateUser(int userId, UserUpdateDto dto);
+
+        // Borrado lógico de la cuenta
+        Task DeleteUser(int userId);
     }
 }

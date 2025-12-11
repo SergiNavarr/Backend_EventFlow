@@ -175,5 +175,24 @@ namespace Backend_EventFlow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // GET: api/posts/feed?page=1&pageSize=10
+        [HttpGet("feed")]
+        public async Task<IActionResult> GetFeed([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 50) pageSize = 10;
+
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var posts = await _postService.GetHomeFeed(userId, page, pageSize);
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

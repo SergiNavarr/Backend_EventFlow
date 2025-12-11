@@ -370,5 +370,48 @@ namespace Negocio.Services
                 IsLikedByMe = false
             };
         }
+
+        public async Task<List<PostDto>> GetHomeFeed(int currentUserId, int page, int pageSize)
+        {
+            // 1. Obtener IDs de gente a la que sigo
+            var followingUserIds = await _context.UserFollows
+                .Where(f => f.FollowerId == currentUserId)
+                .Select(f => f.FollowedId)
+                .ToListAsync();
+
+            // 2. Obtener IDs de comunidades a las que pertenezco
+            var myCommunityIds = await _context.UserCommunities
+                .Where(uc => uc.UserId == currentUserId)
+                .Select(uc => uc.CommunityId)
+                .ToListAsync();
+
+            // 3. Incluir mi propio ID para ver mis posts también
+            followingUserIds.Add(currentUserId);
+
+            // 4. Construir la Query (Sin ejecutarla aún)
+            var query = _context.Posts
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .Where(p => p.IsActive)
+                .Where(p =>
+                    // Condición A: El autor es alguien a quien sigo
+                    followingUserIds.Contains(p.AuthorId) ||
+                    // Condición B: El post es de una comunidad mía
+                    (p.CommunityId.HasValue && myCommunityIds.Contains(p.CommunityId.Value))
+                )
+                .OrderByDescending(p => p.CreatedAt); // Orden cronológico inverso
+
+            // 5. Aplicar PAGINACIÓN (Skip y Take)
+            var pagedPosts = await query
+                .Skip((page - 1) * pageSize) // Saltar las páginas anteriores
+                .Take(pageSize)              // Tomar solo el tamaño de bloque
+                .ToListAsync();
+
+            // 6. Convertir a DTO (usando tu método existente)
+            return await ConvertListToDto(pagedPosts, currentUserId);
+        }
     }
 }

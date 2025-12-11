@@ -111,6 +111,37 @@ namespace Negocio.Services
             };
         }
 
+        public async Task<UserProfileDto> UpdateUser(int userId, UserUpdateDto dto)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null || !user.IsActive) throw new Exception("Usuario no encontrado.");
+
+            // Solo actualizamos si el campo viene con datos (no es null)
+            if (dto.Bio != null) user.Bio = dto.Bio;
+            if (dto.AvatarUrl != null) user.AvatarUrl = dto.AvatarUrl;
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // Devolvemos el perfil actualizado reutilizando tu método GetById 
+            // (o mapeando manualmente si prefieres evitar la doble consulta)
+            return await GetById(userId);
+        }
+
+        public async Task DeleteUser(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) throw new Exception("Usuario no encontrado.");
+
+            // Borrado Lógico
+            user.IsActive = false;
+            user.UpdatedAt = DateTime.UtcNow;
+
+
+            await _context.SaveChangesAsync();
+        }
+
         private string GenerateJwtToken(User user)
         {
             var key = _config["Jwt:Key"];

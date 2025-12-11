@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Negocio.Services;
 using Negocio.Interfaces;
+using Negocio.Hubs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,12 +42,17 @@ builder.Services.AddAuthentication(config => {
     };
 });
 
+//Configuracion de SignalR
+builder.Services.AddSignalR();
+
 //Agregacion de servicios propios
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IPostService, PostService>();
 
 builder.Services.AddScoped<IEventService, EventService>();
+
+builder.Services.AddScoped<IChatService, ChatService>();
 
 var app = builder.Build();
 
@@ -64,5 +70,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<ChatHub>("/chathub");
 
 app.Run();

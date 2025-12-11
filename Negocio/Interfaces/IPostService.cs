@@ -36,5 +36,8 @@ namespace Negocio.Interfaces
         // Borrar Post (Soft Delete)
         Task DeletePost(int postId, int userId);
 
+        // Home Feed personalizado
+        Task<List<PostDto>> GetHomeFeed(int currentUserId, int page, int pageSize);
+
     }
 }

@@ -25,5 +25,13 @@ namespace Negocio.Interfaces
         // 4. CAMBIO DE CONTRASEÑA
         // Recibe el ID del usuario y los datos necesarios para el cambio de contraseña.
         Task ChangePassword(int userId, ChangePasswordDto dto);
+
+        // 5. RECUPERAR CONTRASEÑA
+        // Recibe el email y devuelve un token para resetear la contraseña.
+        Task<string> GenerateRecoveryToken(ForgotPasswordDto dto);
+
+        // 6. RESETEAR CONTRASEÑA
+        // Recibe el token y la nueva contraseña para actualizarla en BD.
+        Task ResetPasswordWithToken(ResetPasswordDto dto);
     }
 }

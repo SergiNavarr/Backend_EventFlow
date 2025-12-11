@@ -135,5 +135,29 @@ namespace Negocio.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public async Task ChangePassword(int userId, ChangePasswordDto dto)
+        {
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                throw new Exception("Usuario no encontrado");
+            }
+            // Usamos BCrypt para comparar el texto plano con el hash guardado
+            if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            {
+                throw new Exception("La contraseña actual es incorrecta");
+            }
+
+            // encriptamos la nueva
+            string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+            user.PasswordHash = newPasswordHash;
+
+            user.UpdatedAt = DateTime.UtcNow; 
+
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

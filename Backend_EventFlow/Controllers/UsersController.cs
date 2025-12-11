@@ -61,5 +61,26 @@ namespace Backend_EventFlow.Controllers
                 return NotFound(new { message = "Usuario no encontrado" });
             }
         }
+
+        // PUT: api/users/change-password
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] Datos.DTOs.ChangePasswordDto dto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null) return Unauthorized();
+
+                int userId = int.Parse(userIdClaim.Value);
+
+                await _userService.ChangePassword(userId, dto);
+
+                return Ok(new { message = "Contraseña actualizada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

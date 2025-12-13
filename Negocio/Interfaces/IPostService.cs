@@ -39,5 +39,7 @@ namespace Negocio.Interfaces
         // Home Feed personalizado
         Task<List<PostDto>> GetHomeFeed(int currentUserId, int page, int pageSize);
 
+        // Obtener posts de un autor específico 
+        Task<List<PostDto>> GetPostsByAuthor(int authorId, int currentUserId);
     }
 }

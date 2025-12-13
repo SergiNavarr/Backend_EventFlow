@@ -39,5 +39,17 @@ namespace Negocio.Interfaces
 
         // 8. BORRADO LOGICO DE USUARIO
         Task DeleteUser(int userId);
+
+        // 9. SEGUIR USUARIO
+        Task FollowUserAsync(int targetUserId, int currentUserId);
+
+        // 10. DEJAR DE SEGUIR
+        Task UnfollowUserAsync(int targetUserId, int currentUserId);
+
+        // 11. VER SEGUIDORES (Quién sigue al usuario X)
+        Task<List<UserSummaryDto>> GetFollowersAsync(int userId, int currentUserId);
+
+        // 12. VER SEGUIDOS (A quién sigue el usuario X)
+        Task<List<UserSummaryDto>> GetFollowingAsync(int userId, int currentUserId);
     }
 }

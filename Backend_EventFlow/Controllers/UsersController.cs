@@ -115,5 +115,69 @@ namespace Backend_EventFlow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // POST: api/users/5/follow
+        [HttpPost("{id}/follow")]
+        public async Task<IActionResult> Follow(int id)
+        {
+            try
+            {
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                await _userService.FollowUserAsync(id, currentUserId);
+                return Ok(new { message = "Ahora sigues a este usuario." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // DELETE: api/users/5/follow (Unfollow)
+        [HttpDelete("{id}/follow")]
+        public async Task<IActionResult> Unfollow(int id)
+        {
+            try
+            {
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                await _userService.UnfollowUserAsync(id, currentUserId);
+                return Ok(new { message = "Has dejado de seguir a este usuario." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // GET: api/users/5/followers
+        [HttpGet("{id}/followers")]
+        public async Task<IActionResult> GetFollowers(int id)
+        {
+            try
+            {
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var list = await _userService.GetFollowersAsync(id, currentUserId);
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        // GET: api/users/5/following
+        [HttpGet("{id}/following")]
+        public async Task<IActionResult> GetFollowing(int id)
+        {
+            try
+            {
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var list = await _userService.GetFollowingAsync(id, currentUserId);
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
     }
 }

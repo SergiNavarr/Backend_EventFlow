@@ -322,6 +322,13 @@ namespace Negocio.Services
                 .Select(l => l.PostId)
                 .ToListAsync();
 
+            // IDs de usuarios a los que sigo
+            // Traemos todos los IDs de la gente que sigo en una sola consulta rápida
+            var myFollowingIds = await _context.UserFollows
+                .Where(f => f.FollowerId == currentUserId)
+                .Select(f => f.FollowedId)
+                .ToListAsync();
+
             // 2. Mapeamos usando la lista que obtuvimos
             var dtoList = posts.Select(p =>
             {
@@ -331,6 +338,12 @@ namespace Negocio.Services
                 // AHORA le inyectamos la inteligencia social:
                 // Si el ID de este post está en mi "bolsa" de likes, entonces es TRUE.
                 dto.IsLikedByMe = myLikedPostIds.Contains(p.Id);
+
+               // El post es mio?
+                dto.IsMine = p.AuthorId == currentUserId;
+
+                // Si el autor está en mis seguidos -> true
+                dto.IsAuthorFollowedByMe = myFollowingIds.Contains(p.AuthorId);
 
                 // Opcional: Si quieres contadores reales (aunque cuidado con el rendimiento aquí)
                 // Para MVP está bien hacerlo así, para PRO se deberían guardar contadores en la tabla Posts.
@@ -412,6 +425,26 @@ namespace Negocio.Services
 
             // 6. Convertir a DTO (usando tu método existente)
             return await ConvertListToDto(pagedPosts, currentUserId);
+        }
+
+        // POSTS DE UN AUTOR (Mis Posts)
+        public async Task<List<PostDto>> GetPostsByAuthor(int authorId, int currentUserId)
+        {
+            // Validamos que el autor exista y esté activo
+            bool authorExists = await _context.Users.AnyAsync(u => u.Id == authorId && u.IsActive);
+            if (!authorExists) throw new Exception("El usuario no existe.");
+
+            var posts = await _context.Posts
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .Where(p => p.IsActive && p.AuthorId == authorId) 
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            return await ConvertListToDto(posts, currentUserId);
         }
     }
 }

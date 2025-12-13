@@ -194,5 +194,25 @@ namespace Backend_EventFlow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // GET: api/posts/my-posts
+        [HttpGet("my-posts")]
+        public async Task<IActionResult> GetMyPosts()
+        {
+            try
+            {
+                // Extraemos "quién soy yo" del Token
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                // Pedimos los posts donde el Autor soy YO (userId, userId)
+                var posts = await _postService.GetPostsByAuthor(userId, userId);
+
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

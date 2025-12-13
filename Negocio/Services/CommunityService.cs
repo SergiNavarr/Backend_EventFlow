@@ -61,70 +61,115 @@ namespace Negocio.Services
                 .Select(u => u.Username)
                 .FirstOrDefaultAsync();
 
-            return MapToDto(community, ownerName ?? "Desconocido", 1);
+            return MapToDto(community, ownerName ?? "Desconocido", 1, true);
         }
 
         // 2. LISTAR TODAS
-        public async Task<List<CommunityDto>> GetAllCommunitiesAsync()
+        public async Task<List<CommunityDto>> GetAllCommunitiesAsync(int? currentUserId)
         {
-            // Traemos las comunidades activas e INCLUIMOS los datos del Owner
             var communities = await _context.Communities
                 .Include(c => c.Owner)
                 .Where(c => c.IsActive)
                 .ToListAsync();
 
+            // OPTIMIZACIÓN: 
+            // Traemos TODOS los IDs de comunidades donde el usuario actual es miembro en una sola consulta.
+            // Esto evita hacer una consulta a la DB por cada comunidad en el bucle (Problema N+1).
+            var joinedCommunityIds = new HashSet<int>();
+            if (currentUserId.HasValue)
+            {
+                // Primero traemos la lista con ToListAsync (Asíncrono DB)
+                var idsList = await _context.UserCommunities
+                    .Where(uc => uc.UserId == currentUserId.Value)
+                    .Select(uc => uc.CommunityId)
+                    .ToListAsync();
+
+                // Luego lo convertimos a HashSet en memoria (Síncrono)
+                joinedCommunityIds = idsList.ToHashSet();
+            }
+
             var dtoList = new List<CommunityDto>();
 
             foreach (var c in communities)
             {
-                // Contamos cuántos miembros tiene (consultando la tabla intermedia)
+                // Calcular miembros
                 int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == c.Id);
 
-                dtoList.Add(MapToDto(c, c.Owner.Username, members));
+                // Verificamos si el ID de esta comunidad está en la lista de "Mis Comunidades"
+                bool isMember = joinedCommunityIds.Contains(c.Id);
+
+                dtoList.Add(MapToDto(c, c.Owner.Username, members, isMember));
             }
 
             return dtoList;
         }
 
         // 3. OBTENER POR ID
-        public async Task<CommunityDto> GetByIdAsync(int id)
+        public async Task<CommunityDto> GetByIdAsync(int communityId, int? currentUserId)
         {
             var community = await _context.Communities
                 .Include(c => c.Owner)
-                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
+                .FirstOrDefaultAsync(c => c.Id == communityId && c.IsActive);
 
             if (community == null)
             {
                 throw new Exception("Comunidad no encontrada.");
             }
 
-            int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == id);
+            // 1. Contar miembros totales
+            int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == communityId);
 
-            return MapToDto(community, community.Owner.Username, members);
+            // 2. Calcular si EL usuario actual es miembro
+            bool isMember = false;
+
+            if (currentUserId.HasValue)
+            {
+                isMember = await _context.UserCommunities
+                    .AnyAsync(uc => uc.CommunityId == communityId && uc.UserId == currentUserId.Value);
+            }
+
+            // 3. Pasar el dato al DTO
+            return MapToDto(community, community.Owner.Username, members, isMember);
         }
 
         // 4. MIS COMUNIDADES (Creadas por mí)
-        public async Task<List<CommunityDto>> GetCommunitiesByUserAsync(int userId)
+        public async Task<List<CommunityDto>> GetCommunitiesByUserAsync(int targetUserId, int? viewerId)
         {
+            // 'targetUserId' es el dueño de las comunidades que buscamos
             var communities = await _context.Communities
                 .Include(c => c.Owner)
-                .Where(c => c.OwnerId == userId && c.IsActive)
+                .Where(c => c.OwnerId == targetUserId && c.IsActive)
                 .ToListAsync();
+
+            // OPTIMIZACIÓN: IDs de comunidades donde el VIEWER es miembro
+            var joinedCommunityIds = new HashSet<int>();
+            if (viewerId.HasValue)
+            {
+                var idsList = await _context.UserCommunities
+                    .Where(uc => uc.UserId == viewerId.Value)
+                    .Select(uc => uc.CommunityId)
+                    .ToListAsync(); // Usamos ToListAsync
+
+                joinedCommunityIds = idsList.ToHashSet(); // Convertimos en memoria
+            }
 
             var dtoList = new List<CommunityDto>();
 
             foreach (var c in communities)
             {
                 int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == c.Id);
-                dtoList.Add(MapToDto(c, c.Owner.Username, members));
+
+                // Calculamos si el que mira es miembro
+                bool isMember = joinedCommunityIds.Contains(c.Id);
+
+                dtoList.Add(MapToDto(c, c.Owner.Username, members, isMember));
             }
 
             return dtoList;
         }
 
         // --- MÉTODO PRIVADO (Helper) ---
-        // Usamos esto para no repetir el código de asignación (Entidad -> DTO) 4 veces
-        private CommunityDto MapToDto(Community c, string ownerName, int memberCount)
+        private CommunityDto MapToDto(Community c, string ownerName, int memberCount, bool isMember)
         {
             return new CommunityDto
             {
@@ -136,12 +181,12 @@ namespace Negocio.Services
                 OwnerId = c.OwnerId,
                 OwnerName = ownerName,
                 MemberCount = memberCount,
-                IsMember = false // Por ahora false, luego implementaremos esta lógica
+                IsMember = isMember
             };
         }
 
-    // 5. UNIRSE A COMUNIDAD
-    public async Task JoinCommunityAsync(int communityId, int userId)
+        // 5. UNIRSE A COMUNIDAD
+        public async Task JoinCommunityAsync(int communityId, int userId)
     {
         // A. Validar que la comunidad exista
         bool communityExists = await _context.Communities.AnyAsync(c => c.Id == communityId && c.IsActive);
@@ -231,7 +276,7 @@ namespace Negocio.Services
             // Recalcular miembros para devolver el DTO
             int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == id);
 
-            return MapToDto(community, community.Owner.Username, members);
+            return MapToDto(community, community.Owner.Username, members, true);
         }
 
         // 8. BORRAR COMUNIDAD 

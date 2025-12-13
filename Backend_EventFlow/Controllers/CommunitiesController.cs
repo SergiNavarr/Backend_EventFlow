@@ -53,8 +53,17 @@ namespace Backend_EventFlow.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var list = await _communityService.GetAllCommunitiesAsync();
-            return Ok(list);
+            // Obtener ID del usuario actual (si existe)
+            int? currentUserId = null;
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
+            {
+                currentUserId = parsedId;
+            }
+
+            // Pasamos el ID al servicio
+            var communities = await _communityService.GetAllCommunitiesAsync(currentUserId);
+            return Ok(communities);
         }
 
         // 3. VER DETALLE
@@ -64,25 +73,40 @@ namespace Backend_EventFlow.Controllers
         {
             try
             {
-                var community = await _communityService.GetByIdAsync(id);
+                //Intentamos obtener el ID del usuario logueado desde los Claims
+                int? currentUserId = null;
+                var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
+                {
+                    currentUserId = parsedId;
+                }
+                var community = await _communityService.GetByIdAsync(id, currentUserId);
+
                 return Ok(community);
             }
             catch (Exception ex)
             {
+                // Si el servicio lanza excepción porque no existe, devolvemos 404
                 return NotFound(new { message = ex.Message });
             }
         }
 
         // 4. MIS COMUNIDADES
-        // GET: api/communities/my-communities
-        [HttpGet("my-communities")]
-        public async Task<IActionResult> GetMyCommunities()
+        // GET: api/communities/user/{userId}
+        [HttpGet("user/{targetUserId}")]
+        public async Task<IActionResult> GetByUser(int targetUserId)
         {
-            // Sacamos el ID del token de nuevo
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            // Obtener ID del usuario que está MIRANDO (viewer)
+            int? viewerId = null;
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
+            {
+                viewerId = parsedId;
+            }
 
-            var list = await _communityService.GetCommunitiesByUserAsync(userId);
-            return Ok(list);
+            var communities = await _communityService.GetCommunitiesByUserAsync(targetUserId, viewerId);
+            return Ok(communities);
         }
 
         //5.UNIRSE A COMUNIDAD

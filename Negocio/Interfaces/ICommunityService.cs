@@ -16,15 +16,15 @@ namespace Negocio.Interfaces
 
         // 2. LISTAR TODAS (Explorar)
         // Devuelve la lista de todas las comunidades activas.
-        Task<List<CommunityDto>> GetAllCommunitiesAsync();
+        Task<List<CommunityDto>> GetAllCommunitiesAsync(int? currentUserId);
 
         // 3. VER DETALLE
         // Busca una comunidad por ID.
-        Task<CommunityDto> GetByIdAsync(int id);
+        Task<CommunityDto> GetByIdAsync(int id, int? currentUserId);
 
         // 4. MIS COMUNIDADES
         // Devuelve las comunidades creadas por un usuario específico (filtro por dueño).
-        Task<List<CommunityDto>> GetCommunitiesByUserAsync(int userId);
+        Task<List<CommunityDto>> GetCommunitiesByUserAsync(int userId, int? viewerId);
 
         // 5. UNIRSE A COMUNIDAD
         Task JoinCommunityAsync(int communityId, int userId);

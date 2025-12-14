@@ -248,8 +248,7 @@ namespace Negocio.Services
             foreach (var evt in events)
             {
                 int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
-                // Como soy el creador, mi status es null o "Organizer" 
-                // O podemos chequear si también me uní a mi propio evento:
+              
                 bool isJoined = await _context.EventAttendees.AnyAsync(ea => ea.EventId == evt.Id && ea.UserId == userId);
 
                 result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, isJoined ? "Going" : null));
@@ -265,7 +264,7 @@ namespace Negocio.Services
                 .Include(e => e.Community)
                 // Buscamos en la sub-lista 'Attendees' si está mi ID
                 .Where(e => e.IsActive && e.Attendees.Any(a => a.UserId == userId))
-                .OrderBy(e => e.StartDateTime) // Orden cronológico (lo que viene pronto primero)
+                .OrderBy(e => e.StartDateTime) // Orden cronológico 
                 .ToListAsync();
 
             var result = new List<EventDto>();

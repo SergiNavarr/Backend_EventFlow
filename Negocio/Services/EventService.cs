@@ -233,6 +233,51 @@ namespace Negocio.Services
             await _context.SaveChangesAsync();
         }
 
+        // MIS EVENTOS CREADOS (Soy el Organizador)
+        public async Task<List<EventDto>> GetMyCreatedEvents(int userId)
+        {
+            var events = await _context.Events
+                .Include(e => e.Organizer)
+                .Include(e => e.Community)
+                .Where(e => e.IsActive && e.OrganizerId == userId) 
+                .OrderByDescending(e => e.StartDateTime)
+                .ToListAsync();
+
+            // Reutilizamos lógica de conversión
+            var result = new List<EventDto>();
+            foreach (var evt in events)
+            {
+                int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
+                // Como soy el creador, mi status es null o "Organizer" 
+                // O podemos chequear si también me uní a mi propio evento:
+                bool isJoined = await _context.EventAttendees.AnyAsync(ea => ea.EventId == evt.Id && ea.UserId == userId);
+
+                result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, isJoined ? "Going" : null));
+            }
+            return result;
+        }
+
+        // EVENTOS A LOS QUE ASISTIRÉ 
+        public async Task<List<EventDto>> GetMyAttendingEvents(int userId)
+        {
+            var events = await _context.Events
+                .Include(e => e.Organizer)
+                .Include(e => e.Community)
+                // Buscamos en la sub-lista 'Attendees' si está mi ID
+                .Where(e => e.IsActive && e.Attendees.Any(a => a.UserId == userId))
+                .OrderBy(e => e.StartDateTime) // Orden cronológico (lo que viene pronto primero)
+                .ToListAsync();
+
+            var result = new List<EventDto>();
+            foreach (var evt in events)
+            {
+                int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
+                // Aquí el status es fijo "Going" porque justamente filtramos por eso
+                result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, "Going"));
+            }
+            return result;
+        }
+
         // --- Helper Privado ---
         private EventDto MapToDto(Event e, string orgName, string? communityName, int attendeesCount, string? myStatus)
         {

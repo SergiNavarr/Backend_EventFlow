@@ -17,7 +17,7 @@ namespace Negocio.Interfaces
         Task<EventDto> GetEventByIdAsync(int eventId, int currentUserId);
 
         // 3. Listar Eventos (Con filtros básicos)
-        Task<List<EventDto>> SearchEventsAsync(string? searchTerm);
+        Task<List<EventDto>> SearchEventsAsync(string? searchTerm, int currentUserId);
 
         // --- FUNCIONALIDAD SOCIAL---
 
@@ -32,5 +32,11 @@ namespace Negocio.Interfaces
 
         // Eliminar evento (soft delete)
         Task DeleteEventAsync(int eventId, int userId);
+
+        // Mis Eventos Creados
+        Task<List<EventDto>> GetMyCreatedEvents(int userId);
+
+        // Eventos a los que asistiré 
+        Task<List<EventDto>> GetMyAttendingEvents(int userId);
     }
 }

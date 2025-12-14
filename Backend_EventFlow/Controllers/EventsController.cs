@@ -150,5 +150,33 @@ namespace Backend_Eventflow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // 8. MIS CREADOS
+        // GET: api/events/my-created
+        [HttpGet("my-created")]
+        public async Task<IActionResult> GetMyCreated()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var events = await _eventService.GetMyCreatedEvents(userId);
+                return Ok(events);
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        // 9. MIS ASISTENCIAS (Agenda)
+        // GET: api/events/my-attending
+        [HttpGet("my-attending")]
+        public async Task<IActionResult> GetMyAttending()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var events = await _eventService.GetMyAttendingEvents(userId);
+                return Ok(events);
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
     }
 }

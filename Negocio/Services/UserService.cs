@@ -19,11 +19,13 @@ namespace Negocio.Services
     {
         private readonly EventflowDbContext _context;
         private readonly IConfiguration _config;
+        private readonly IEmailService _emailService;
 
-        public UserService(EventflowDbContext context, IConfiguration config)
+        public UserService(EventflowDbContext context, IConfiguration config, IEmailService emailService)
         {
             _context = context;
             _config = config;
+            _emailService = emailService;
         }
 
         public async Task Register(UserRegisterDto dto)
@@ -222,7 +224,7 @@ namespace Negocio.Services
         public async Task ResetPasswordWithToken(ResetPasswordDto dto)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = System.Text.Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
+            var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
 
             try
             {

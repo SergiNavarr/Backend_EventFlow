@@ -259,5 +259,107 @@ namespace Negocio.Services
                 throw new Exception("El enlace de recuperación es inválido o ha expirado.");
             }
         }
+
+        // SEGUIR USUARIO
+        public async Task FollowUserAsync(int targetUserId, int currentUserId)
+        {
+            // Validar que no sea a sí mismo
+            if (targetUserId == currentUserId)
+                throw new Exception("No puedes seguirte a ti mismo.");
+
+            // Validar que el usuario destino exista y esté activo
+            var targetExists = await _context.Users.AnyAsync(u => u.Id == targetUserId && u.IsActive);
+            if (!targetExists) throw new Exception("El usuario a seguir no existe.");
+
+            // Verificar si ya lo sigue
+            var alreadyFollowing = await _context.UserFollows
+                .AnyAsync(f => f.FollowerId == currentUserId && f.FollowedId == targetUserId);
+
+            if (alreadyFollowing) throw new Exception("Ya sigues a este usuario.");
+
+            // Crear relación
+            var follow = new UserFollow
+            {
+                FollowerId = currentUserId,
+                FollowedId = targetUserId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.UserFollows.Add(follow);
+            await _context.SaveChangesAsync();
+        }
+
+        // DEJAR DE SEGUIR
+        public async Task UnfollowUserAsync(int targetUserId, int currentUserId)
+        {
+            var follow = await _context.UserFollows
+                .FirstOrDefaultAsync(f => f.FollowerId == currentUserId && f.FollowedId == targetUserId);
+
+            if (follow == null) throw new Exception("No sigues a este usuario.");
+
+            _context.UserFollows.Remove(follow);
+            await _context.SaveChangesAsync();
+        }
+
+        // OBTENER SEGUIDORES (Quiénes siguen a userId)
+        public async Task<List<UserSummaryDto>> GetFollowersAsync(int userId, int currentUserId)
+        {
+            // Validar usuario base
+            if (!await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive))
+                throw new Exception("Usuario no encontrado.");
+
+            // OPTIMIZACIÓN: Traer primero a quiénes sigo YO (currentUserId)
+            // para poder calcular el 'IsFollowing' rápidamente.
+            var myFollowingIds = await _context.UserFollows
+                .Where(f => f.FollowerId == currentUserId)
+                .Select(f => f.FollowedId)
+                .ToListAsync();
+
+            // Buscar en UserFollows donde FollowedId == userId (Los que lo siguen a él)
+            var followers = await _context.UserFollows
+                .Include(f => f.Follower) // Traer datos del seguidor
+                .Where(f => f.FollowedId == userId && f.Follower.IsActive)
+                .Select(f => f.Follower) // Nos quedamos con el objeto Usuario
+                .ToListAsync();
+
+            // Mapear a DTO
+            return followers.Select(u => new UserSummaryDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                AvatarUrl = u.AvatarUrl,
+                Bio = u.Bio,
+                // ¿El usuario de la lista está en MI lista de seguidos?
+                IsFollowing = myFollowingIds.Contains(u.Id)
+            }).ToList();
+        }
+
+        // OBTENER SEGUIDOS (A quién sigue userId)
+        public async Task<List<UserSummaryDto>> GetFollowingAsync(int userId, int currentUserId)
+        {
+            if (!await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive))
+                throw new Exception("Usuario no encontrado.");
+
+            var myFollowingIds = await _context.UserFollows
+                .Where(f => f.FollowerId == currentUserId)
+                .Select(f => f.FollowedId)
+                .ToListAsync();
+
+            // Buscar en UserFollows donde FollowerId == userId (A quiénes sigue él)
+            var following = await _context.UserFollows
+                .Include(f => f.Followed) // Traer datos del seguido
+                .Where(f => f.FollowerId == userId && f.Followed.IsActive)
+                .Select(f => f.Followed) // Nos quedamos con el objeto Usuario
+                .ToListAsync();
+
+            return following.Select(u => new UserSummaryDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                AvatarUrl = u.AvatarUrl,
+                Bio = u.Bio,
+                IsFollowing = myFollowingIds.Contains(u.Id)
+            }).ToList();
+        }
     }
 }

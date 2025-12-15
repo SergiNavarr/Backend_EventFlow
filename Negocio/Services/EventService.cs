@@ -233,51 +233,48 @@ namespace Negocio.Services
             await _context.SaveChangesAsync();
         }
 
-        // Obtener lista de eventos a los que Asisto
-        public async Task<List<EventDto>> GetMyCalendarEventsAsync(int userId)
+        // MIS EVENTOS CREADOS (Soy el Organizador)
+        public async Task<List<EventDto>> GetMyCreatedEvents(int userId)
         {
-            // 1. Obtener IDs de las comunidades a las que pertenezco
-            var myCommunityIds = await _context.UserCommunities
-                .Where(uc => uc.UserId == userId)
-                .Select(uc => uc.CommunityId)
-                .ToListAsync();
-
-            // 2. Query Principal: Traer eventos que cumplan Condición A o Condición B
             var events = await _context.Events
                 .Include(e => e.Organizer)
                 .Include(e => e.Community)
-                .Where(e => e.IsActive && (
-                    // A. Soy asistente (estoy en la tabla EventAttendees)
-                    e.Attendees.Any(a => a.UserId == userId) ||
-
-                    // B. Es un evento de una de mis comunidades
-                    (e.CommunityId.HasValue && myCommunityIds.Contains(e.CommunityId.Value))
-                ))
-                .OrderBy(e => e.StartDateTime)
+                .Where(e => e.IsActive && e.OrganizerId == userId) 
+                .OrderByDescending(e => e.StartDateTime)
                 .ToListAsync();
 
-            // 3. Optimización: Traer mis asistencias reales para saber cuál es cuál
-            var myAttendanceList = await _context.EventAttendees
-                .Where(ea => ea.UserId == userId)
-                .Select(ea => ea.EventId)
-                .ToListAsync();
-
-            var myAttendanceIds = myAttendanceList.ToHashSet(); 
-
-            var dtoList = new List<EventDto>();
-
+            // Reutilizamos lógica de conversión
+            var result = new List<EventDto>();
             foreach (var evt in events)
             {
-                // Contar asistentes totales
-                int attendeesCount = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
+                int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
+              
+                bool isJoined = await _context.EventAttendees.AnyAsync(ea => ea.EventId == evt.Id && ea.UserId == userId);
 
-                // Determinamos el estado: 
-                string? myStatus = myAttendanceIds.Contains(evt.Id) ? "Going" : null;
-
-                dtoList.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, attendeesCount, myStatus));
+                result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, isJoined ? "Going" : null));
             }
+            return result;
+        }
 
-            return dtoList;
+        // EVENTOS A LOS QUE ASISTIRÉ 
+        public async Task<List<EventDto>> GetMyAttendingEvents(int userId)
+        {
+            var events = await _context.Events
+                .Include(e => e.Organizer)
+                .Include(e => e.Community)
+                // Buscamos en la sub-lista 'Attendees' si está mi ID
+                .Where(e => e.IsActive && e.Attendees.Any(a => a.UserId == userId))
+                .OrderBy(e => e.StartDateTime) // Orden cronológico 
+                .ToListAsync();
+
+            var result = new List<EventDto>();
+            foreach (var evt in events)
+            {
+                int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
+                // Aquí el status es fijo "Going" porque justamente filtramos por eso
+                result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, "Going"));
+            }
+            return result;
         }
 
         // --- Helper Privado ---

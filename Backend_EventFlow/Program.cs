@@ -66,6 +66,18 @@ builder.Services.AddScoped<IEventService, EventService>();
 
 builder.Services.AddScoped<IChatService, ChatService>();
 
+// Estrategia dual de emails
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<IEmailService, EmailServiceDev>();
+    Console.WriteLine("[EMAIL] Usando MailKit (Dev)");
+}
+else
+{
+    builder.Services.AddScoped<IEmailService, EmailServiceProd>();
+    Console.WriteLine("[EMAIL] Usando SendGrid (Prod)");
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

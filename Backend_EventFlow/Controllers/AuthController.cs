@@ -10,9 +10,12 @@ namespace Backend_EventFlow.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
-        public AuthController(IUserService userService)
+        private readonly IEmailService _emailService;
+
+        public AuthController(IUserService userService, IEmailService emailService)
         {
             _userService = userService;
+            _emailService = emailService;
         }
 
         [HttpPost("register")]
@@ -58,17 +61,22 @@ namespace Backend_EventFlow.Controllers
 
                 string token = await _userService.GenerateRecoveryToken(dto);
 
-                // aquí iría el código para ENVIAR el email con el token.
-                // Como no tenemos servicio de email, devolvemos el token para probarlo en Postman.
-                return Ok(new 
-                { 
-                    message = "Si el correo existe, se enviará un enlace de recuperación.",
-                    token_para_probar = token // quitar en producción
-                });
+                // Enviar email con el link de recuperación
+                var resetLink = $"http://localhost:3000/reset-password?token={token}"; // cambiar a la url de la app
+                var htmlBody = $@"
+                    <h2>Recuperación de Contraseña</h2>
+                    <p>Hacé clic en el siguiente enlace para restablecer tu contraseña:</p>
+                    <a href='{resetLink}'>Restablecer Contraseña</a>
+                    <p>Si no solicitaste este cambio, ignorá este mensaje.</p>
+                ";
+
+                await _emailService.SendEmailAsync(dto.Email, "Recuperación de Contraseña", htmlBody);
+
+                return Ok(new { message = "Si el correo existe, se enviará un enlace de recuperación." });
             }
             catch (Exception)
             {
-                return Ok(new { message = "Si el correo existe, se enviará un enlace de recuperación." });
+                return Ok(new { message = "Si el correo existe, se enviará un enlace de recuperaciónnnn." });
             }
         }
 

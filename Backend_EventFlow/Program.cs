@@ -65,6 +65,7 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<IEventService, EventService>();
 
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 
 // Estrategia dual de emails
 if (builder.Environment.IsDevelopment())

@@ -43,6 +43,8 @@ namespace Negocio.Services
 
             _context.Communities.Add(community);
 
+            await _context.SaveChangesAsync();
+
             // 3. Crear la Membresía 
             var membership = new UserCommunity
             {

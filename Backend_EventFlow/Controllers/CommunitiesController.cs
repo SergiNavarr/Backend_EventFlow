@@ -130,8 +130,8 @@ namespace Backend_EventFlow.Controllers
         }
 
         //6. SALIR DE COMUNIDAD
-        // POST: api/communities/5/leave
-        [HttpPost("{id}/leave")]
+        // Delete: api/communities/5/leave
+        [HttpDelete("{id}/leave")]
         public async Task<IActionResult> Leave(int id)
         {
             try

@@ -150,5 +150,22 @@ namespace Backend_Eventflow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        //8. OBTENER EVENTOS DEL CALENDARIO DEL USUARIO
+        // GET: api/events/calendar
+        [HttpGet("calendar")]
+        public async Task<IActionResult> GetMyCalendar()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var events = await _eventService.GetMyCalendarEventsAsync(userId);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

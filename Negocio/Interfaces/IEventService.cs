@@ -32,5 +32,8 @@ namespace Negocio.Interfaces
 
         // Eliminar evento (soft delete)
         Task DeleteEventAsync(int eventId, int userId);
+
+        // Obtener eventos del calendario del usuario
+        Task<List<EventDto>> GetMyCalendarEventsAsync(int userId);
     }
 }

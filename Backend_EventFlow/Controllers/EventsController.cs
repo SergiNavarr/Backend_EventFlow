@@ -165,18 +165,21 @@ namespace Backend_Eventflow.Controllers
             catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        // 9. MIS ASISTENCIAS (Agenda)
-        // GET: api/events/my-attending
-        [HttpGet("my-attending")]
-        public async Task<IActionResult> GetMyAttending()
+        //9. OBTENER EVENTOS DEL CALENDARIO DEL USUARIO
+        // GET: api/events/calendar
+        [HttpGet("calendar")]
+        public async Task<IActionResult> GetMyCalendar()
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-                var events = await _eventService.GetMyAttendingEvents(userId);
+                var events = await _eventService.GetMyCalendarEventsAsync(userId);
                 return Ok(events);
             }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

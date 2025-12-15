@@ -36,7 +36,7 @@ namespace Negocio.Interfaces
         // Mis Eventos Creados
         Task<List<EventDto>> GetMyCreatedEvents(int userId);
 
-        // Eventos a los que asistiré 
-        Task<List<EventDto>> GetMyAttendingEvents(int userId);
+        // Obtener eventos del calendario del usuario
+        Task<List<EventDto>> GetMyCalendarEventsAsync(int userId);
     }
 }

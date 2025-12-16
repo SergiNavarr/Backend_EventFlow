@@ -14,7 +14,7 @@ namespace Negocio.Interfaces
 
         // 2. Obtener Evento por ID (Con detalles)
         // Aquí necesitamos el userId para saber si YO ya estoy unido al evento o no
-        Task<EventDto> GetEventByIdAsync(int eventId, int currentUserId);
+        Task<EventDto> GetEventByIdAsync(int eventId, int? currentUserId = null);
 
         // 3. Listar Eventos (Con filtros básicos)
         Task<List<EventDto>> SearchEventsAsync(string? searchTerm);

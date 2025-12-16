@@ -51,5 +51,8 @@ namespace Negocio.Interfaces
 
         // 12. VER SEGUIDOS (A quién sigue el usuario X)
         Task<List<UserSummaryDto>> GetFollowingAsync(int userId, int currentUserId);
+
+        // 13. BUSCAR USUARIOS
+        Task<List<UserProfileDto>> SearchUsers(string query);
     }
 }

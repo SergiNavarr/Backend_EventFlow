@@ -295,11 +295,40 @@ namespace Negocio.Services
             }
 
             // SOFT DELETE (Borrado Lógico)
-            // No la borramos físicamente para mantener historial 
             community.IsActive = false;
             community.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+        }
+
+        // 9. BUSCAR COMUNIDADES
+        public async Task<List<CommunityDto>> SearchCommunities(string query, int currentUserId)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return new List<CommunityDto>();
+
+            string term = query.ToLower();
+
+            var communities = await _context.Communities
+                .Include(c => c.Owner)
+                .Where(c => c.IsActive &&
+                       (c.Name.ToLower().Contains(term) || c.Description.ToLower().Contains(term)))
+                .Take(20)
+                .ToListAsync();
+
+            var dtoList = new List<CommunityDto>();
+
+            foreach (var c in communities)
+            {
+                int memberCount = await _context.UserCommunities
+                    .CountAsync(uc => uc.CommunityId == c.Id);
+
+                bool isMember = await _context.UserCommunities
+                    .AnyAsync(uc => uc.CommunityId == c.Id && uc.UserId == currentUserId);
+
+                dtoList.Add(MapToDto(c, c.Owner.Username, memberCount, isMember));
+            }
+
+            return dtoList;
         }
     }
 }

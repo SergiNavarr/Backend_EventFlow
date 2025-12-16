@@ -95,32 +95,44 @@ namespace Negocio.Services
         }
 
         // 3. BUSCAR / LISTAR EVENTOS
-        public async Task<List<EventDto>> SearchEventsAsync(string? searchTerm)
+        public async Task<List<EventDto>> SearchEvents(string query, int currentUserId)
         {
-            var query = _context.Events
+            if (string.IsNullOrWhiteSpace(query)) return new List<EventDto>();
+
+            string term = query.ToLower();
+
+            var events = await _context.Events
                 .Include(e => e.Organizer)
-                .Include(e => e.Community)
-                .Where(e => e.IsActive); // Solo activos
+                .Include(e => e.Attendees) // Necesario para contar y saber si voy
+                .Where(e => e.IsActive &&
+                           (e.Title.ToLower().Contains(term) || e.Description.ToLower().Contains(term)))
+                .OrderByDescending(e => e.StartDateTime) // Ordenar por fecha (más reciente primero)
+                .Take(20)
+                .ToListAsync();
 
-            // Filtro por término de búsqueda (Título o Descripción)
-            if (!string.IsNullOrEmpty(searchTerm))
+            // Mapeo a DTO
+            return events.Select(e => new EventDto
             {
-                string term = searchTerm.ToLower();
-                query = query.Where(e => e.Title.ToLower().Contains(term) ||
-                                         e.Description.ToLower().Contains(term));
-            }
+                Id = e.Id,
+                Title = e.Title,
+                Description = e.Description,
+                StartDateTime = e.StartDateTime,
+                EndDateTime = e.EndDateTime,
+                Location = e.Location,
+                IsOnline = e.IsOnline,
+                CoverImageUrl = e.CoverImageUrl,
 
-            var events = await query.OrderBy(e => e.StartDateTime).ToListAsync();
+                // Datos del Organizador
+                OrganizerId = e.OrganizerId,
+                OrganizerName = e.Organizer.Username,
+                OrganizerAvatar = e.Organizer.AvatarUrl,
 
-            var result = new List<EventDto>();
-            foreach (var evt in events)
-            {
-                int count = await _context.EventAttendees.CountAsync(ea => ea.EventId == evt.Id);
-
-                result.Add(MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, count, null));
-            }
-
-            return result;
+                // Contadores y Estado
+                AttendeesCount = e.Attendees.Count,
+                // Buscamos si yo estoy en la lista de asistentes
+                MyRsvpStatus = e.Attendees
+                    .FirstOrDefault(a => a.UserId == currentUserId)?.RSVPStatus.ToString() ?? "NotGoing"
+            }).ToList();
         }
 
         // 4. UNIRSE (JOIN) 

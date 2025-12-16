@@ -37,5 +37,7 @@ namespace Negocio.Interfaces
 
         // 9. BORRAR COMUNIDAD (Soft Delete)
         Task DeleteCommunityAsync(int id, int userId);
+
+        Task<List<CommunityDto>> SearchCommunities(string query, int currentUserId);
     }
 }

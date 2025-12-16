@@ -17,7 +17,7 @@ namespace Negocio.Interfaces
         Task<EventDto> GetEventByIdAsync(int eventId, int currentUserId);
 
         // 3. Listar Eventos (Con filtros básicos)
-        Task<List<EventDto>> SearchEventsAsync(string? searchTerm);
+        Task<List<EventDto>> SearchEvents(string query, int currentUserId);
 
         // --- FUNCIONALIDAD SOCIAL---
 

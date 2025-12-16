@@ -58,13 +58,14 @@ namespace Backend_Eventflow.Controllers
             }
         }
 
-        // 3. BUSCAR / LISTAR
-        // GET: api/events?search=curso
-        [HttpGet]
-        public async Task<IActionResult> Search([FromQuery] string? search)
+        // 3. BUSCAR
+        // GET: api/events/search?query=concierto
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
         {
-            var events = await _eventService.SearchEventsAsync(search);
-            return Ok(events);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var results = await _eventService.SearchEvents(query, userId);
+            return Ok(results);
         }
 
         // 4. UNIRSE (JOIN)

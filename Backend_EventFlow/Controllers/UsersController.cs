@@ -190,5 +190,21 @@ namespace Backend_EventFlow.Controllers
                 return NotFound(new { message = ex.Message });
             }
         }
+
+        // GET: api/users/search?query=texto
+        // GET: api/users/search?query=juan
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
+        {
+            try
+            {
+                var results = await _userService.SearchUsers(query);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

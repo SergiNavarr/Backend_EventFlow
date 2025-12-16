@@ -185,5 +185,17 @@ namespace Backend_EventFlow.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        //9. BUSCAR COMUNIDADES
+        // GET: api/communities/search?query=programadores
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
+        {
+            // Obtenemos ID para saber si es miembro o no
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            var results = await _communityService.SearchCommunities(query, userId);
+            return Ok(results);
+        }
     }
 }

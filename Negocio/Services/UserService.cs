@@ -373,5 +373,40 @@ namespace Negocio.Services
                 IsFollowing = myFollowingIds.Contains(u.Id)
             }).ToList();
         }
+
+        // BUSCAR USUARIOS POR NOMBRE
+        public async Task<List<UserProfileDto>> SearchUsers(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return new List<UserProfileDto>();
+
+            string term = query.ToLower();
+
+            var users = await _context.Users
+                .Where(u => u.IsActive && u.Username.ToLower().Contains(term))
+                .Take(20)
+                .ToListAsync();
+
+            var dtoList = new List<UserProfileDto>();
+
+            foreach (var user in users)
+            {
+                var followers = await _context.UserFollows.CountAsync(f => f.FollowedId == user.Id);
+                var following = await _context.UserFollows.CountAsync(f => f.FollowerId == user.Id);
+
+                dtoList.Add(new UserProfileDto
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Bio = user.Bio,
+                    AvatarUrl = user.AvatarUrl,
+                    CreatedAt = user.CreatedAt,
+                    FollowersCount = followers,
+                    FollowingCount = following
+                });
+            }
+
+            return dtoList;
+        }
     }
 }

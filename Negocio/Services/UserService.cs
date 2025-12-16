@@ -84,7 +84,7 @@ namespace Negocio.Services
             };
         }
 
-        public async Task<UserProfileDto> GetById(int userId)
+        public async Task<UserProfileDto> GetById(int userId, int? currentUserId = null)
         {
             // Buscamos al usuario
             var user = await _context.Users.FindAsync(userId);
@@ -99,6 +99,15 @@ namespace Negocio.Services
             var followersCount = await _context.UserFollows.CountAsync(f => f.FollowedId == userId);
             var followingCount = await _context.UserFollows.CountAsync(f => f.FollowerId == userId);
 
+             bool isFollowing = false;
+
+            // Solo verificamos si hay un usuario logueado y si no es él mismo
+            if (currentUserId.HasValue && currentUserId.Value != userId)
+            {
+                isFollowing = await _context.UserFollows
+                    .AnyAsync(f => f.FollowerId == currentUserId.Value && f.FollowedId == userId);
+            }
+
             // Mapeo de Dto
             return new UserProfileDto
             {
@@ -109,7 +118,8 @@ namespace Negocio.Services
                 AvatarUrl = user.AvatarUrl,
                 CreatedAt = user.CreatedAt,
                 FollowersCount = followersCount,
-                FollowingCount = followingCount
+                FollowingCount = followingCount,
+                IsFollowing = isFollowing
             };
         }
 

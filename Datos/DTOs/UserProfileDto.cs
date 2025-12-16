@@ -16,5 +16,6 @@ namespace Datos.DTOs
         public DateTime CreatedAt { get; set; }
         public int FollowersCount { get; set; } // Cuánta gente me sigue
         public int FollowingCount { get; set; } // A cuánta gente sigo
+        public bool IsFollowing { get; set; }
     }
 }

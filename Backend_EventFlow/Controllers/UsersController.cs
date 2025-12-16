@@ -25,6 +25,7 @@ namespace Backend_EventFlow.Controllers
         {
             try
             {
+                int? currentUserId = null;
                 // 1. "Abrimos" el token para sacar el ID del usuario
                 // ClaimTypes.NameIdentifier es donde guardamos el ID en el UserService
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -37,7 +38,7 @@ namespace Backend_EventFlow.Controllers
                 int userId = int.Parse(userIdClaim.Value);
 
                 // 2. Buscamos los datos
-                var profile = await _userService.GetById(userId);
+                var profile = await _userService.GetById(userId, currentUserId);
 
                 return Ok(profile);
             }
@@ -54,7 +55,17 @@ namespace Backend_EventFlow.Controllers
         {
             try
             {
-                var profile = await _userService.GetById(id);
+                int? currentUserId = null;
+                var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                //  Si encontramos el claim y es un número válido, lo asignamos
+                if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
+                {
+                    currentUserId = parsedId;
+                }
+                // Si el usuario estaba logueado, 'currentUserId' tendrá un número
+                // Si no, seguirá siendo 'null'
+                var profile = await _userService.GetById(id, currentUserId);
                 return Ok(profile);
             }
             catch (Exception ex)

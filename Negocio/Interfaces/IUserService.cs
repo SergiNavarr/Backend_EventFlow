@@ -20,7 +20,7 @@ namespace Negocio.Interfaces
 
         // 3. PERFIL
         // Recibe un ID y devuelve los datos públicos del usuario (incluyendo contadores de seguidores).
-        Task<UserProfileDto> GetById(int userId);
+        Task<UserProfileDto> GetById(int userId, int? currentUserId = null);
 
         // 4. CAMBIO DE CONTRASEÑA
         // Recibe el ID del usuario y los datos necesarios para el cambio de contraseña.

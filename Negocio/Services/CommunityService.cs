@@ -55,7 +55,23 @@ namespace Negocio.Services
             };
 
             _context.UserCommunities.Add(membership);
-            await _context.SaveChangesAsync(); // Guardamos la relación
+            var autoPost = new Post
+            {
+                AuthorId = userId,
+
+                // Contenido del post
+                Content = $"¡He creado la comunidad \"{community.Name}\". ¡Únanse y participen!",
+
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+
+                CommunityId = community.Id
+            };
+
+            _context.Posts.Add(autoPost);
+
+            // Guardamos la Membresía Y el Post al mismo tiempo
+            await _context.SaveChangesAsync();
 
             // 4. Retornar el DTO
             var ownerName = await _context.Users

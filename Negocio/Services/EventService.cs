@@ -64,15 +64,32 @@ namespace Negocio.Services
             _context.Events.Add(newEvent);
             await _context.SaveChangesAsync();
 
-            // Buscamos el nombre del organizador para el DTO
+
+            // Creamos el Post
+            var autoPost = new Post
+            {
+                AuthorId = organizerId, // El autor es el mismo que creó el evento
+
+                Content = $"¡He organizado el evento {newEvent.Title}. ¡Los espero!",
+
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+
+                EventId = newEvent.Id
+            };
+
+            _context.Posts.Add(autoPost);
+
+            // Guardamos el Post
+            await _context.SaveChangesAsync();
+
             var organizer = await _context.Users.FindAsync(organizerId);
 
-            // Retornamos el DTO
             return MapToDto(newEvent, organizer.Username, communityName: null, attendeesCount: 0, myStatus: null);
         }
 
         // 2. OBTENER EVENTO POR ID
-        public async Task<EventDto> GetEventByIdAsync(int eventId, int currentUserId)
+        public async Task<EventDto> GetEventByIdAsync(int eventId, int? currentUserId = null)
         {
             var evt = await _context.Events
                 .Include(e => e.Organizer)
@@ -81,15 +98,18 @@ namespace Negocio.Services
 
             if (evt == null) throw new Exception("Evento no encontrado.");
 
-            // Contar asistentes totales
             int attendeesCount = await _context.EventAttendees.CountAsync(ea => ea.EventId == eventId);
 
-            // Verificar si YO (currentUserId) estoy asistiendo
-            // Buscamos en la tabla intermedia si existe la relación
-            bool isAttending = await _context.EventAttendees
-                .AnyAsync(ea => ea.EventId == eventId && ea.UserId == currentUserId);
+            string? myStatus = null;
 
-            string? myStatus = isAttending ? "Going" : null;
+            // Solo consultamos a la DB si el usuario REALMENTE existe 
+            if (currentUserId.HasValue)
+            {
+                bool isAttending = await _context.EventAttendees
+                    .AnyAsync(ea => ea.EventId == eventId && ea.UserId == currentUserId.Value);
+
+                if (isAttending) myStatus = "Going";
+            }
 
             return MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, attendeesCount, myStatus);
         }

@@ -46,15 +46,26 @@ namespace Backend_Eventflow.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                // 1. Declaramos como nulo (Semánticamente correcto: "No sé quién es")
+                int? currentUserId = null;
 
-                // Pasamos el userId para saber si el usuario YA está unido (MyRsvpStatus)
-                var evt = await _eventService.GetEventByIdAsync(id, userId);
+                var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                // 2. Si hay token válido, asignamos el valor
+                if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
+                {
+                    currentUserId = parsedId;
+                }
+
+                // 3. Pasamos null o el ID. El servicio entenderá.
+                var evt = await _eventService.GetEventByIdAsync(id, currentUserId);
+
                 return Ok(evt);
             }
             catch (Exception ex)
             {
-                return NotFound(new { message = ex.Message });
+                if (ex.Message.Contains("no encontrado")) return NotFound(new { message = ex.Message });
+                return StatusCode(500, new { message = "Error interno" });
             }
         }
 

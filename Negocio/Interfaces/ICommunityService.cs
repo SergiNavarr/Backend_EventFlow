@@ -23,7 +23,6 @@ namespace Negocio.Interfaces
         Task<CommunityDto> GetByIdAsync(int id, int? currentUserId);
 
         // 4. MIS COMUNIDADES
-        // Devuelve las comunidades creadas por un usuario específico (filtro por dueño).
         Task<List<CommunityDto>> GetCommunitiesByUserAsync(int userId, int? viewerId);
 
         // 5. UNIRSE A COMUNIDAD

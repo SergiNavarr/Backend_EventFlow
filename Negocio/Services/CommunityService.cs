@@ -153,34 +153,33 @@ namespace Negocio.Services
         // 4. MIS COMUNIDADES (Creadas por mí)
         public async Task<List<CommunityDto>> GetCommunitiesByUserAsync(int targetUserId, int? viewerId)
         {
-            // 'targetUserId' es el dueño de las comunidades que buscamos
-            var communities = await _context.Communities
-                .Include(c => c.Owner)
-                .Where(c => c.OwnerId == targetUserId && c.IsActive)
+            var userCommunities = await _context.UserCommunities
+                .Include(uc => uc.Community)
+                    .ThenInclude(c => c.Owner)
+                .Where(uc => uc.UserId == targetUserId && uc.Community.IsActive)
                 .ToListAsync();
 
-            // OPTIMIZACIÓN: IDs de comunidades donde el VIEWER es miembro
-            var joinedCommunityIds = new HashSet<int>();
+            var joinedByViewerIds = new HashSet<int>();
             if (viewerId.HasValue)
             {
-                var idsList = await _context.UserCommunities
+                joinedByViewerIds = (await _context.UserCommunities
                     .Where(uc => uc.UserId == viewerId.Value)
                     .Select(uc => uc.CommunityId)
-                    .ToListAsync(); // Usamos ToListAsync
-
-                joinedCommunityIds = idsList.ToHashSet(); // Convertimos en memoria
+                    .ToListAsync()).ToHashSet();
             }
 
             var dtoList = new List<CommunityDto>();
 
-            foreach (var c in communities)
+            foreach (var uc in userCommunities)
             {
-                int members = await _context.UserCommunities.CountAsync(uc => uc.CommunityId == c.Id);
+                var c = uc.Community;
 
-                // Calculamos si el que mira es miembro
-                bool isMember = joinedCommunityIds.Contains(c.Id);
+                int totalMembers = await _context.UserCommunities
+                    .CountAsync(x => x.CommunityId == c.Id);
 
-                dtoList.Add(MapToDto(c, c.Owner.Username, members, isMember));
+                bool isMember = joinedByViewerIds.Contains(c.Id);
+
+                dtoList.Add(MapToDto(c, c.Owner.Username, totalMembers, isMember));
             }
 
             return dtoList;

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Negocio.Interfaces;
-using Negocio.Services;
 using System.Security.Claims;
 
 namespace Backend_EventFlow.Controllers
@@ -27,7 +26,6 @@ namespace Backend_EventFlow.Controllers
             try
             {
                 // A. Obtenemos el ID del usuario desde el Token
-                // Esto es 100% seguro, el usuario no puede falsificarlo
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
                 if (userIdClaim == null) return Unauthorized(); // Por si acaso
@@ -55,7 +53,7 @@ namespace Backend_EventFlow.Controllers
         {
             // Obtener ID del usuario actual (si existe)
             int? currentUserId = null;
-            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var claimId = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
             {
                 currentUserId = parsedId;
@@ -75,7 +73,7 @@ namespace Backend_EventFlow.Controllers
             {
                 //Intentamos obtener el ID del usuario logueado desde los Claims
                 int? currentUserId = null;
-                var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var claimId = User.FindFirst(ClaimTypes.NameIdentifier);
 
                 if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
                 {
@@ -99,7 +97,7 @@ namespace Backend_EventFlow.Controllers
         {
             // Obtener ID del usuario que está MIRANDO (viewer)
             int? viewerId = null;
-            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var claimId = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
             {
                 viewerId = parsedId;

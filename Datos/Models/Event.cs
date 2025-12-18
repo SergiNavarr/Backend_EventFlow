@@ -22,25 +22,24 @@ namespace Datos.Models
         public DateTime? EndDateTime { get; set; }
 
         [Required]
-        public string Location { get; set; } // Puede ser dirección o URL
+        public string Location { get; set; }
 
         public bool IsOnline { get; set; }
         public string? CoverImageUrl { get; set; }
 
-        // Capacidad máxima (null = ilimitado)
         public int? MaxAttendees { get; set; }
 
         // Organizador
         public int OrganizerId { get; set; }
         public User Organizer { get; set; } = null!;
 
-        // Comunidad opcional (si el evento es parte de una comunidad)
+        // Comunidad opcional
         public int? CommunityId { get; set; }
         public Community? Community { get; set; }
 
         // --- Relaciones ---
         public ICollection<EventAttendee> Attendees { get; set; } = new List<EventAttendee>();
-        public ICollection<Post> Posts { get; set; } = new List<Post>(); // Posts dentro del evento
+        public ICollection<Post> Posts { get; set; } = new List<Post>();
         public ICollection<EventChatMessage> ChatMessages { get; set; } = new List<EventChatMessage>();
     }
 }

@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace Backend_Eventflow.Controllers
 {
-    [Route("api/[controller]")] // Ruta: api/events
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize] 
     public class EventsController : ControllerBase
@@ -26,7 +26,7 @@ namespace Backend_Eventflow.Controllers
         {
             try
             {
-                // Obtenemos el ID del organizador (usuario logueado)
+                // Obtenemos el ID del organizador
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
                 var createdEvent = await _eventService.CreateEventAsync(dto, userId);
@@ -46,18 +46,15 @@ namespace Backend_Eventflow.Controllers
         {
             try
             {
-                // 1. Declaramos como nulo (Semánticamente correcto: "No sé quién es")
                 int? currentUserId = null;
 
                 var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
 
-                // 2. Si hay token válido, asignamos el valor
                 if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
                 {
                     currentUserId = parsedId;
                 }
 
-                // 3. Pasamos null o el ID. El servicio entenderá.
                 var evt = await _eventService.GetEventByIdAsync(id, currentUserId);
 
                 return Ok(evt);

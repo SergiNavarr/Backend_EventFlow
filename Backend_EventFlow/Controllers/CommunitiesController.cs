@@ -25,23 +25,20 @@ namespace Backend_EventFlow.Controllers
         {
             try
             {
-                // A. Obtenemos el ID del usuario desde el Token
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
-                if (userIdClaim == null) return Unauthorized(); // Por si acaso
+                if (userIdClaim == null) return Unauthorized();
 
                 int userId = int.Parse(userIdClaim.Value);
 
-                // B. Llamamos al servicio
+
                 var createdCommunity = await _communityService.CreateCommunityAsync(dto, userId);
 
-                // C. Retornamos 201 Created
-                // "nameof(GetById)" le dice al cliente dónde puede consultar la comunidad creada
+
                 return CreatedAtAction(nameof(GetById), new { id = createdCommunity.Id }, createdCommunity);
             }
             catch (Exception ex)
             {
-                // Si falla (ej: nombre duplicado), devolvemos 400 Bad Request
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -51,7 +48,6 @@ namespace Backend_EventFlow.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            // Obtener ID del usuario actual (si existe)
             int? currentUserId = null;
             var claimId = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
@@ -71,7 +67,6 @@ namespace Backend_EventFlow.Controllers
         {
             try
             {
-                //Intentamos obtener el ID del usuario logueado desde los Claims
                 int? currentUserId = null;
                 var claimId = User.FindFirst(ClaimTypes.NameIdentifier);
 
@@ -85,7 +80,6 @@ namespace Backend_EventFlow.Controllers
             }
             catch (Exception ex)
             {
-                // Si el servicio lanza excepción porque no existe, devolvemos 404
                 return NotFound(new { message = ex.Message });
             }
         }
@@ -95,7 +89,6 @@ namespace Backend_EventFlow.Controllers
         [HttpGet("user/{targetUserId}")]
         public async Task<IActionResult> GetByUser(int targetUserId)
         {
-            // Obtener ID del usuario que está MIRANDO (viewer)
             int? viewerId = null;
             var claimId = User.FindFirst(ClaimTypes.NameIdentifier);
             if (claimId != null && int.TryParse(claimId.Value, out int parsedId))

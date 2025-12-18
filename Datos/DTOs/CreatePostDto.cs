@@ -14,7 +14,6 @@ namespace Datos.DTOs
 
         public string? ImageUrl { get; set; }
 
-        // Opcionales: Si vienen nulos, es un post personal
         public int? CommunityId { get; set; }
         public int? EventId { get; set; }
     }

@@ -14,8 +14,8 @@ namespace Datos.DTOs
         public string? Bio { get; set; }
         public string? AvatarUrl { get; set; }
         public DateTime CreatedAt { get; set; }
-        public int FollowersCount { get; set; } // Cuánta gente me sigue
-        public int FollowingCount { get; set; } // A cuánta gente sigo
+        public int FollowersCount { get; set; }
+        public int FollowingCount { get; set; }
         public bool IsFollowing { get; set; }
     }
 }

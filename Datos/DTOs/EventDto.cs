@@ -18,7 +18,6 @@ namespace Datos.DTOs
         public string? CoverImageUrl { get; set; }
         public int? MaxAttendees { get; set; }
 
-        // --- Datos Enriquecidos ---
 
         // Organizador
         public int OrganizerId { get; set; }
@@ -30,7 +29,7 @@ namespace Datos.DTOs
         public string? CommunityName { get; set; } 
 
         // Estadísticas
-        public int AttendeesCount { get; set; } // Cuántos van
+        public int AttendeesCount { get; set; } 
 
         // Estado del usuario actual 
         public string? MyRsvpStatus { get; set; }

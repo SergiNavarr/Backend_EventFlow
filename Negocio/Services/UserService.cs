@@ -86,22 +86,16 @@ namespace Negocio.Services
 
         public async Task<UserProfileDto> GetById(int userId, int? currentUserId = null)
         {
-            // Buscamos al usuario
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null)
                 throw new Exception("Usuario no encontrado");
-
-            // TRUCO DE RENDIMIENTO:
-            // En lugar de cargar TODA la lista de seguidores (que podrían ser miles),
-            // hacemos una consulta "Count" directa a la base de datos.
 
             var followersCount = await _context.UserFollows.CountAsync(f => f.FollowedId == userId);
             var followingCount = await _context.UserFollows.CountAsync(f => f.FollowerId == userId);
 
              bool isFollowing = false;
 
-            // Solo verificamos si hay un usuario logueado y si no es él mismo
             if (currentUserId.HasValue && currentUserId.Value != userId)
             {
                 isFollowing = await _context.UserFollows
@@ -128,16 +122,13 @@ namespace Negocio.Services
             var user = await _context.Users.FindAsync(userId);
             if (user == null || !user.IsActive) throw new Exception("Usuario no encontrado.");
 
-            // Solo actualizamos si el campo viene con datos (no es null)
-            if (dto.Bio != null) user.Bio = dto.Bio;
-            if (dto.AvatarUrl != null) user.AvatarUrl = dto.AvatarUrl;
+            if (dto.Bio != null || dto.Bio == "") user.Bio = dto.Bio;
+            if (dto.AvatarUrl != null || dto.AvatarUrl == "") user.AvatarUrl = dto.AvatarUrl;
 
             user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            // Devolvemos el perfil actualizado reutilizando tu método GetById 
-            // (o mapeando manualmente si prefieres evitar la doble consulta)
             return await GetById(userId);
         }
 
@@ -206,7 +197,6 @@ namespace Negocio.Services
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null)
             {
-                // Por seguridad no decimos si el email existe o no
                 throw new Exception("Si el correo existe, se enviarán las instrucciones.");
             }
 
@@ -313,25 +303,21 @@ namespace Negocio.Services
             await _context.SaveChangesAsync();
         }
 
-        // OBTENER SEGUIDORES (Quiénes siguen a userId)
+        // OBTENER SEGUIDORES 
         public async Task<List<UserSummaryDto>> GetFollowersAsync(int userId, int currentUserId)
         {
-            // Validar usuario base
             if (!await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive))
                 throw new Exception("Usuario no encontrado.");
 
-            // OPTIMIZACIÓN: Traer primero a quiénes sigo YO (currentUserId)
-            // para poder calcular el 'IsFollowing' rápidamente.
             var myFollowingIds = await _context.UserFollows
                 .Where(f => f.FollowerId == currentUserId)
                 .Select(f => f.FollowedId)
                 .ToListAsync();
 
-            // Buscar en UserFollows donde FollowedId == userId (Los que lo siguen a él)
             var followers = await _context.UserFollows
-                .Include(f => f.Follower) // Traer datos del seguidor
+                .Include(f => f.Follower)
                 .Where(f => f.FollowedId == userId && f.Follower.IsActive)
-                .Select(f => f.Follower) // Nos quedamos con el objeto Usuario
+                .Select(f => f.Follower)
                 .ToListAsync();
 
             // Mapear a DTO
@@ -357,11 +343,10 @@ namespace Negocio.Services
                 .Select(f => f.FollowedId)
                 .ToListAsync();
 
-            // Buscar en UserFollows donde FollowerId == userId (A quiénes sigue él)
             var following = await _context.UserFollows
-                .Include(f => f.Followed) // Traer datos del seguido
+                .Include(f => f.Followed)
                 .Where(f => f.FollowerId == userId && f.Followed.IsActive)
-                .Select(f => f.Followed) // Nos quedamos con el objeto Usuario
+                .Select(f => f.Followed)
                 .ToListAsync();
 
             return following.Select(u => new UserSummaryDto

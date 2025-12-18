@@ -12,7 +12,6 @@ namespace Negocio.Services
     {
         private readonly Cloudinary _cloudinary;
 
-        //leer la configuración de Cloudinary desde appsettings.json
         public ImageService(IConfiguration config)
         {
             var account = new Account(
@@ -27,14 +26,12 @@ namespace Negocio.Services
         {
             try
             {
-                // configurar los parámetros de la imagen a subir
                 var uploadParams = new ImageUploadParams
                 {
                     File = new FileDescription($"data:image/png;base64,{imageBase64}"),
                     Folder = folder,
                     Transformation = new Transformation().Quality("auto").FetchFormat("auto")
                 };
-                // subir la imagen a Cloudinary
                 var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
                 if (uploadResult.Error != null)

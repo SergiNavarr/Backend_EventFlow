@@ -47,10 +47,8 @@ namespace Backend_EventFlow.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            // Obtenemos el usuario actual para saber si le dio like o es autor
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
-            // Aquí buscas UN solo post por su ID primaria
             var post = await _postService.GetPostById(id, userId);
 
             if (post == null)
@@ -201,10 +199,8 @@ namespace Backend_EventFlow.Controllers
         {
             try
             {
-                // Extraemos "quién soy yo" del Token
                 var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
-                // Pedimos los posts donde el Autor soy YO (userId, userId)
                 var posts = await _postService.GetPostsByAuthor(userId, currentUserId);
 
                 return Ok(posts);

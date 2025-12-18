@@ -38,31 +38,26 @@ namespace Backend_EventFlow.Controllers
             try
             {
                 var response = await _userService.Login(dto);
-                // Devolvemos 200 OK con el Token y los datos
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                // Devolvemos 401 Unauthorized si la contraseña está mal
+
                 return Unauthorized(new { message = ex.Message });
             }
         }
 
-        // POST: api/auth/forgot-password (pedir token)
+        // POST: api/auth/forgot-password 
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
             try
             {
-                // NOTA DE SEGURIDAD:
-                // Aunque el servicio lance una excepción si el email no existe,
-                // por estándar de seguridad, siempre devolvemos un 200 OK
-                // para evitar que un atacante adivine emails válidos (enumeración de usuarios).
 
                 string token = await _userService.GenerateRecoveryToken(dto);
 
-                // Enviar email con el link de recuperación
-                var resetLink = $"http://localhost:3000/reset-password?token={token}"; // cambiar a la url de la app
+                var resetLink = $"http://localhost:3000/reset-password?token={token}";
                 var htmlBody = $@"
                     <h2>Recuperación de Contraseña</h2>
                     <p>Hacé clic en el siguiente enlace para restablecer tu contraseña:</p>
@@ -80,7 +75,7 @@ namespace Backend_EventFlow.Controllers
             }
         }
 
-        // POST: api/auth/reset-password (usar el token y la nueva clave)
+        // POST: api/auth/reset-password
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         {

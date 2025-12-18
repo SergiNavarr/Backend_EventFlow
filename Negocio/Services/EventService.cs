@@ -23,19 +23,16 @@ namespace Negocio.Services
         // 1. CREAR EVENTO
         public async Task<EventDto> CreateEventAsync(CreateEventDto dto, int organizerId)
         {
-            // Validación de Fechas: Inicio no puede ser después del Fin
             if (dto.EndDateTime.HasValue && dto.StartDateTime > dto.EndDateTime.Value)
             {
                 throw new Exception("La fecha de inicio no puede ser posterior a la fecha de fin.");
             }
 
-            // Validar que la fecha no sea en el pasado 
             if (dto.StartDateTime < DateTime.UtcNow)
             {
                 throw new Exception("No puedes crear eventos en el pasado.");
             }
 
-            //Validar comunidad si es que se proporciona
             if (dto.CommunityId.HasValue)
             {
                 bool communityExists = await _context.Communities
@@ -55,7 +52,7 @@ namespace Negocio.Services
                 IsOnline = dto.IsOnline,
                 CoverImageUrl = dto.CoverImageUrl,
                 MaxAttendees = dto.MaxAttendees,
-                CommunityId = dto.CommunityId, // Puede ser null
+                CommunityId = dto.CommunityId,
                 OrganizerId = organizerId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -64,24 +61,6 @@ namespace Negocio.Services
             _context.Events.Add(newEvent);
             await _context.SaveChangesAsync();
 
-
-            // Creamos el Post
-            var autoPost = new Post
-            {
-                AuthorId = organizerId, // El autor es el mismo que creó el evento
-
-                Content = $"¡He organizado el evento {newEvent.Title}. ¡Los espero!",
-
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true,
-
-                EventId = newEvent.Id
-            };
-
-            _context.Posts.Add(autoPost);
-
-            // Guardamos el Post
-            await _context.SaveChangesAsync();
 
             var organizer = await _context.Users.FindAsync(organizerId);
 
@@ -123,14 +102,14 @@ namespace Negocio.Services
 
             var events = await _context.Events
                 .Include(e => e.Organizer)
-                .Include(e => e.Attendees) // Necesario para contar y saber si voy
+                .Include(e => e.Attendees)
                 .Where(e => e.IsActive &&
                            (e.Title.ToLower().Contains(term) || e.Description.ToLower().Contains(term)))
-                .OrderByDescending(e => e.StartDateTime) // Ordenar por fecha (más reciente primero)
+                .OrderByDescending(e => e.StartDateTime)
                 .Take(20)
                 .ToListAsync();
 
-            // Mapeo a DTO
+
             return events.Select(e => new EventDto
             {
                 Id = e.Id,
@@ -142,14 +121,12 @@ namespace Negocio.Services
                 IsOnline = e.IsOnline,
                 CoverImageUrl = e.CoverImageUrl,
 
-                // Datos del Organizador
                 OrganizerId = e.OrganizerId,
                 OrganizerName = e.Organizer.Username,
                 OrganizerAvatar = e.Organizer.AvatarUrl,
 
-                // Contadores y Estado
                 AttendeesCount = e.Attendees.Count,
-                // Buscamos si yo estoy en la lista de asistentes
+
                 MyRsvpStatus = e.Attendees
                     .FirstOrDefault(a => a.UserId == currentUserId)?.RSVPStatus.ToString() ?? "NotGoing"
             }).ToList();
@@ -165,7 +142,7 @@ namespace Negocio.Services
             bool alreadyJoined = await _context.EventAttendees
                 .AnyAsync(ea => ea.EventId == eventId && ea.UserId == userId);
 
-            if (alreadyJoined) return; // Si ya estoy, no hago nada 
+            if (alreadyJoined) return;
 
             // Verificar Cupos (MaxAttendees)
             if (evt.MaxAttendees.HasValue)
@@ -238,10 +215,8 @@ namespace Negocio.Services
 
             await _context.SaveChangesAsync();
 
-            // Contamos asistentes para devolver el DTO bien formado
             int attendeesCount = await _context.EventAttendees.CountAsync(ea => ea.EventId == eventId);
 
-            // Retornamos el DTO actualizado
             return MapToDto(evt, evt.Organizer.Username, evt.Community?.Name, attendeesCount, null);
         }
 
@@ -258,14 +233,13 @@ namespace Negocio.Services
                 throw new Exception("No tienes permiso para eliminar este evento.");
             }
 
-            // Soft Delete (Lo desactivamos en lugar de borrarlo físicamente)
             evt.IsActive = false;
             evt.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
         }
 
-        // MIS EVENTOS CREADOS (Soy el Organizador)
+        // MIS EVENTOS CREADOS
         public async Task<List<EventDto>> GetMyCreatedEvents(int userId)
         {
             var events = await _context.Events
@@ -291,27 +265,22 @@ namespace Negocio.Services
         // Obtener lista de eventos a los que Asisto
         public async Task<List<EventDto>> GetMyCalendarEventsAsync(int userId)
         {
-            // 1. Obtener IDs de las comunidades a las que pertenezco
             var myCommunityIds = await _context.UserCommunities
                 .Where(uc => uc.UserId == userId)
                 .Select(uc => uc.CommunityId)
                 .ToListAsync();
 
-            // 2. Query Principal: Traer eventos que cumplan Condición A o Condición B
             var events = await _context.Events
                 .Include(e => e.Organizer)
                 .Include(e => e.Community)
                 .Where(e => e.IsActive && (
-                    // A. Soy asistente (estoy en la tabla EventAttendees)
                     e.Attendees.Any(a => a.UserId == userId) ||
 
-                    // B. Es un evento de una de mis comunidades
                     (e.CommunityId.HasValue && myCommunityIds.Contains(e.CommunityId.Value))
                 ))
                 .OrderBy(e => e.StartDateTime)
                 .ToListAsync();
 
-            // 3. Optimización: Traer mis asistencias reales para saber cuál es cuál
             var myAttendanceList = await _context.EventAttendees
                 .Where(ea => ea.UserId == userId)
                 .Select(ea => ea.EventId)

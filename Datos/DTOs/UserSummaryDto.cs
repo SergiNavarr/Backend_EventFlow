@@ -13,7 +13,6 @@ namespace Datos.DTOs
         public string? AvatarUrl { get; set; }
         public string? Bio { get; set; }
 
-        // ¿El usuario que está mirando la lista sigue a esta persona?
         public bool IsFollowing { get; set; }
     }
 }

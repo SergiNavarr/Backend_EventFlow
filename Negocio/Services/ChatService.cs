@@ -26,11 +26,9 @@ namespace Negocio.Services
 
         public async Task<List<EventMessageDto>> GetEventMessages(int eventId, int currentUserId)
         {
-            // 1. Validar que el evento exista
             var exists = await _context.Events.AnyAsync(e => e.Id == eventId);
             if (!exists) throw new Exception("Evento no encontrado.");
 
-            // 2. Traer mensajes
             var messages = await _context.EventChatMessages
                 .Include(m => m.Sender)
                 .Where(m => m.EventId == eventId && m.IsActive)
@@ -52,7 +50,6 @@ namespace Negocio.Services
 
         public async Task<EventMessageDto> SendEventMessage(int eventId, int userId, string content)
         {
-            // 1. Validar Acceso: ¿El usuario es Organizador O Asistente?
             var eventData = await _context.Events
                 .Include(e => e.Attendees)
                 .FirstOrDefaultAsync(e => e.Id == eventId);
@@ -67,7 +64,6 @@ namespace Negocio.Services
                 throw new Exception("No puedes enviar mensajes si no estás unido al evento.");
             }
 
-            // 2. Crear y guardar mensaje
             var msg = new EventChatMessage
             {
                 EventId = eventId,
@@ -80,7 +76,6 @@ namespace Negocio.Services
             _context.EventChatMessages.Add(msg);
             await _context.SaveChangesAsync();
 
-            // 2. Preparar el DTO de respuesta
             var sender = await _context.Users.FindAsync(userId);
 
             var messageDto = new EventMessageDto
@@ -91,17 +86,13 @@ namespace Negocio.Services
                 SenderId = userId,
                 SenderName = sender.Username,
                 SenderAvatar = sender.AvatarUrl,
-                IsMine = false // Importante: Al enviarlo por socket, para los otros NO es "Mine"
+                IsMine = false //Al enviarlo por socket, para los otros NO es "Mine"
             };
 
-            // --- AQUÍ ESTÁ LA MAGIA DE SIGNALR ---
-            // Enviamos el mensaje SOLO a la gente conectada al grupo de este evento
-            // "ReceiveMessage" es el nombre del evento que escuchará el Frontend (React)
             await _hubContext.Clients.Group(eventId.ToString())
                 .SendAsync("ReceiveMessage", messageDto);
 
-            // Retornamos el DTO para quien hizo el POST (opcional, pero buena práctica)
-            messageDto.IsMine = true; // Para la respuesta HTTP directa, sí es mío
+            messageDto.IsMine = true;
             return messageDto;
         }
     }

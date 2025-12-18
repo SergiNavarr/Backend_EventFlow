@@ -12,12 +12,10 @@ namespace Datos.DTOs
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        // Datos del remitente (para mostrar foto y nombre en el chat)
         public int SenderId { get; set; }
         public string SenderName { get; set; }
         public string? SenderAvatar { get; set; }
 
-        // Booleano útil para el frontend 
         public bool IsMine { get; set; }
     }
 }

@@ -23,7 +23,6 @@ namespace Negocio.Services
             
             var from = new EmailAddress(_config["SendGrid:FromEmail"], _config["SendGrid:FromName"]);
             var to = new EmailAddress(toEmail);
-            // Configuración dual para emails en producción
             var msg = MailHelper.CreateSingleEmail(from, to, subject, body, body);
             
             try

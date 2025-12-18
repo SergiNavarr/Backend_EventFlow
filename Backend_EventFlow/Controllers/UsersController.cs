@@ -6,9 +6,9 @@ using System.Security.Claims;
 
 namespace Backend_EventFlow.Controllers
 {
-    [Route("api/[controller]")] // La ruta será: api/users
+    [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // <--- ¡CANDADO PUESTO! Solo entra gente con Token
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -19,15 +19,13 @@ namespace Backend_EventFlow.Controllers
         }
 
         // GET: api/users/profile
-        // Obtiene el perfil del usuario que está logueado actualmente
         [HttpGet("profile")]
         public async Task<IActionResult> GetMyProfile()
         {
             try
             {
                 int? currentUserId = null;
-                // 1. "Abrimos" el token para sacar el ID del usuario
-                // ClaimTypes.NameIdentifier es donde guardamos el ID en el UserService
+
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
                 if (userIdClaim == null)
@@ -37,7 +35,7 @@ namespace Backend_EventFlow.Controllers
 
                 int userId = int.Parse(userIdClaim.Value);
 
-                // 2. Buscamos los datos
+
                 var profile = await _userService.GetById(userId, currentUserId);
 
                 return Ok(profile);

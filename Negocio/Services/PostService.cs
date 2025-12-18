@@ -62,7 +62,7 @@ namespace Negocio.Services
                 .Include(p => p.Community)
                 .Include(p => p.Event)
                 .Where(p => p.IsActive)
-                .OrderByDescending(p => p.CreatedAt) // Más nuevos primero
+                .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
             return await ConvertListToDto(posts, currentUserId);
@@ -72,20 +72,18 @@ namespace Negocio.Services
         public async Task<PostDto> GetPostById(int id, int currentUserId)
         {
             var post = await _context.Posts
-                .Include(p => p.Author)      // Necesario para nombre y foto
-                .Include(p => p.Community)   // Necesario para saber contexto
-                .Include(p => p.Event)       // Necesario para saber contexto
-                .Include(p => p.Likes)       // CRÍTICO: Necesario para IsLikedByCurrentUser
-                .Include(p => p.Comments)    // Necesario para CommentsCount
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive); // Filtramos por ID y que no esté borrado
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
 
-            // Si no existe, devolvemos null (el controlador se encargará de mandar 404 NotFound)
             if (post == null)
             {
                 return null;
             }
 
-            // Reutilizamos tu método auxiliar de conversión (singular)
             return ConvertToDto(post, currentUserId);
         }
 
@@ -98,8 +96,6 @@ namespace Negocio.Services
 
             if (!communityExists)
             {
-                // Lanzamos la excepción para cortar la ejecución aquí mismo.
-                // El controlador capturará esto y devolverá un error 
                 throw new Exception("La comunidad no existe o ha sido eliminada.");
             }
 
@@ -144,24 +140,20 @@ namespace Negocio.Services
         // 5. TOGGLE LIKE
         public async Task<bool> ToggleLike(int postId, int userId)
         {
-            // 1. Verificar si el post existe
             var postExists = await _context.Posts.AnyAsync(p => p.Id == postId);
             if (!postExists) throw new Exception("El post no existe.");
 
-            // 2. Buscar si ya existe el like (Clave compuesta: PostId + UserId)
             var existingLike = await _context.PostLikes
                 .FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
 
             if (existingLike != null)
             {
-                // A. SI YA EXISTE -> LO QUITAMOS (Dislike)
                 _context.PostLikes.Remove(existingLike);
                 await _context.SaveChangesAsync();
-                return false; // Indicamos que ahora NO tiene like
+                return false;
             }
             else
             {
-                // B. NO EXISTE -> LO CREAMOS (Like)
                 var newLike = new PostLike
                 {
                     PostId = postId,
@@ -170,7 +162,7 @@ namespace Negocio.Services
                 };
                 _context.PostLikes.Add(newLike);
                 await _context.SaveChangesAsync();
-                return true; // Indicamos que AHORA TIENE like
+                return true;
             }
         }
 
@@ -206,14 +198,13 @@ namespace Negocio.Services
         }
         public async Task<List<CommentDto>> GetComments(int postId)
         {
-            // Verificamos que el post exista y esté activo antes de dar sus comentarios
             var postExists = await _context.Posts.AnyAsync(p => p.Id == postId && p.IsActive);
             if (!postExists) throw new Exception("Post no encontrado.");
 
             return await _context.Comments
                 .Where(c => c.PostId == postId && c.IsActive)
                 .Include(c => c.Author)
-                .OrderBy(c => c.CreatedAt) // Los comentarios viejos primero (tipo chat)
+                .OrderBy(c => c.CreatedAt)
                 .Select(c => new CommentDto
                 {
                     Id = c.Id,
@@ -225,14 +216,13 @@ namespace Negocio.Services
                 })
                 .ToListAsync();
         }
-        //
 
 
         // 7. ACTUALIZAR POST
         public async Task<PostDto> UpdatePost(int postId, UpdatePostDto dto, int userId)
         {
             var post = await _context.Posts
-                .Include(p => p.Author) // Incluimos para el mapeo final
+                .Include(p => p.Author)
                 .Include(p => p.Community)
                 .Include(p => p.Event)
                 .Include(p => p.Likes)
@@ -254,7 +244,6 @@ namespace Negocio.Services
 
             await _context.SaveChangesAsync();
 
-            // Devolvemos el DTO actualizado reutilizando el helper
             return ConvertToDto(post, userId);
         }
 
@@ -419,8 +408,8 @@ namespace Negocio.Services
 
             // 5. Aplicar PAGINACIÓN (Skip y Take)
             var pagedPosts = await query
-                .Skip((page - 1) * pageSize) // Saltar las páginas anteriores
-                .Take(pageSize)              // Tomar solo el tamaño de bloque
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             // 6. Convertir a DTO (usando tu método existente)

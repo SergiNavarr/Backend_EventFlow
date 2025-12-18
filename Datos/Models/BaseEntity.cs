@@ -12,7 +12,6 @@ namespace Datos.Models
         [Key]
         public int Id { get; set; }
 
-        // Borrado Lógico: Si es false, el dato "no existe" para el usuario
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

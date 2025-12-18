@@ -19,20 +19,17 @@ namespace Negocio.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string body, bool isHtml = true)
         {
-            //lee la configuración del email desde appsettings.json
+
             var settings = _config.GetSection("EmailSettings");
 
-            // Crear el mensaje de email
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(settings["SenderName"], settings["SenderEmail"]));
             email.To.Add(MailboxAddress.Parse(toEmail));
             email.Subject = subject;
-            //crea el cuerpo del email
             var builder = new BodyBuilder { HtmlBody = body };
             email.Body = builder.ToMessageBody();
 
             using var smtp = new SmtpClient();
-            // Conectar y enviar el email
             try
             {
                 var host = settings["SmtpHost"];
@@ -46,7 +43,6 @@ namespace Negocio.Services
             }
             catch (Exception ex)
             {
-                //solo se muestra error en consola para no romper la app ya que usamos error silencioso en forget-password
                 Console.WriteLine($"[ERROR EMAIL] {ex.Message}");
             }
             finally

@@ -10,9 +10,12 @@ namespace Backend_EventFlow.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
-        public AuthController(IUserService userService)
+        private readonly IEmailService _emailService;
+
+        public AuthController(IUserService userService, IEmailService emailService)
         {
             _userService = userService;
+            _emailService = emailService;
         }
 
         [HttpPost("register")]
@@ -35,13 +38,61 @@ namespace Backend_EventFlow.Controllers
             try
             {
                 var response = await _userService.Login(dto);
-                // Devolvemos 200 OK con el Token y los datos
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                // Devolvemos 401 Unauthorized si la contraseña está mal
+
                 return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        // POST: api/auth/forgot-password 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            try
+            {
+
+                string token = await _userService.GenerateRecoveryToken(dto);
+
+                var resetLink = $"http://localhost:3000/reset-password?token={token}";
+                var htmlBody = $@"
+                    <h2>Recuperación de Contraseña</h2>
+                    <p>Hacé clic en el siguiente enlace para restablecer tu contraseña:</p>
+                    <a href='{resetLink}'>Restablecer Contraseña</a>
+                    <p>Si no solicitaste este cambio, ignorá este mensaje.</p>
+                ";
+
+                await _emailService.SendEmailAsync(dto.Email, "Recuperación de Contraseña", htmlBody);
+
+                return Ok(new { message = "Si el correo existe, se enviará un enlace de recuperación." });
+            }
+            catch (Exception)
+            {
+                return Ok(new { message = "Si el correo existe, se enviará un enlace de recuperaciónnnn." });
+            }
+        }
+
+        // POST: api/auth/reset-password
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                await _userService.ResetPasswordWithToken(dto);
+                
+                return Ok(new { message = "Contraseña restablecida con éxito. Ya puedes iniciar sesión." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

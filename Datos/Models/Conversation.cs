@@ -8,7 +8,6 @@ namespace Datos.Models
 {
     public class Conversation : BaseEntity
     {
-        // "Private" o "Group" (por ahora Private)
         public string Type { get; set; } = "Private";
 
         public DateTime LastMessageAt { get; set; } = DateTime.UtcNow;

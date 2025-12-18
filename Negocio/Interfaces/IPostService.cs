@@ -30,5 +30,16 @@ namespace Negocio.Interfaces
         Task<CommentDto> AddComment(int postId, CreateCommentDto dto, int userId);
         Task<List<CommentDto>> GetComments(int postId);
 
+        // Actualizar Post
+        Task<PostDto> UpdatePost(int postId, UpdatePostDto dto, int userId);
+
+        // Borrar Post (Soft Delete)
+        Task DeletePost(int postId, int userId);
+
+        // Home Feed personalizado
+        Task<List<PostDto>> GetHomeFeed(int currentUserId, int page, int pageSize);
+
+        // Obtener posts de un autor específico 
+        Task<List<PostDto>> GetPostsByAuthor(int authorId, int currentUserId);
     }
 }

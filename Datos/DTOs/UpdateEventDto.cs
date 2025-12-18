@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Datos.Models
+namespace Datos.DTOs
 {
-    public class Event : BaseEntity
+    public class UpdateEventDto
     {
         [Required]
         [MaxLength(150)]
@@ -25,21 +25,9 @@ namespace Datos.Models
         public string Location { get; set; }
 
         public bool IsOnline { get; set; }
+
         public string? CoverImageUrl { get; set; }
 
         public int? MaxAttendees { get; set; }
-
-        // Organizador
-        public int OrganizerId { get; set; }
-        public User Organizer { get; set; } = null!;
-
-        // Comunidad opcional
-        public int? CommunityId { get; set; }
-        public Community? Community { get; set; }
-
-        // --- Relaciones ---
-        public ICollection<EventAttendee> Attendees { get; set; } = new List<EventAttendee>();
-        public ICollection<Post> Posts { get; set; } = new List<Post>();
-        public ICollection<EventChatMessage> ChatMessages { get; set; } = new List<EventChatMessage>();
     }
 }

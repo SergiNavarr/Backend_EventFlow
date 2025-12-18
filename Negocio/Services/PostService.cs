@@ -62,7 +62,7 @@ namespace Negocio.Services
                 .Include(p => p.Community)
                 .Include(p => p.Event)
                 .Where(p => p.IsActive)
-                .OrderByDescending(p => p.CreatedAt) // Más nuevos primero
+                .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
             return await ConvertListToDto(posts, currentUserId);
@@ -72,26 +72,33 @@ namespace Negocio.Services
         public async Task<PostDto> GetPostById(int id, int currentUserId)
         {
             var post = await _context.Posts
-                .Include(p => p.Author)      // Necesario para nombre y foto
-                .Include(p => p.Community)   // Necesario para saber contexto
-                .Include(p => p.Event)       // Necesario para saber contexto
-                .Include(p => p.Likes)       // CRÍTICO: Necesario para IsLikedByCurrentUser
-                .Include(p => p.Comments)    // Necesario para CommentsCount
-                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive); // Filtramos por ID y que no esté borrado
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
 
-            // Si no existe, devolvemos null (el controlador se encargará de mandar 404 NotFound)
             if (post == null)
             {
                 return null;
             }
 
-            // Reutilizamos tu método auxiliar de conversión (singular)
             return ConvertToDto(post, currentUserId);
         }
 
         // 3. POSTS DE UNA COMUNIDAD
         public async Task<List<PostDto>> GetPostsByCommunity(int communityId, int currentUserId)
         {
+            // ¿La comunidad existe y está activa?
+            bool communityExists = await _context.Communities
+                .AnyAsync(c => c.Id == communityId && c.IsActive);
+
+            if (!communityExists)
+            {
+                throw new Exception("La comunidad no existe o ha sido eliminada.");
+            }
+
             var posts = await _context.Posts
                 .Include(p => p.Author)
                 .Include(p => p.Community)
@@ -108,6 +115,15 @@ namespace Negocio.Services
         // 4. POSTS DE UN EVENTO
         public async Task<List<PostDto>> GetPostsByEvent(int eventId, int currentUserId)
         {
+            // Verificamos si el evento existe y sigue activo (no cancelado/borrado)
+            bool eventExists = await _context.Events
+                .AnyAsync(e => e.Id == eventId && e.IsActive);
+
+            if (!eventExists)
+            {
+                throw new Exception("El evento no existe o ha sido eliminado.");
+            }
+
             var posts = await _context.Posts
                 .Include(p => p.Author)
                 .Include(p => p.Community)
@@ -124,24 +140,20 @@ namespace Negocio.Services
         // 5. TOGGLE LIKE
         public async Task<bool> ToggleLike(int postId, int userId)
         {
-            // 1. Verificar si el post existe
             var postExists = await _context.Posts.AnyAsync(p => p.Id == postId);
             if (!postExists) throw new Exception("El post no existe.");
 
-            // 2. Buscar si ya existe el like (Clave compuesta: PostId + UserId)
             var existingLike = await _context.PostLikes
                 .FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
 
             if (existingLike != null)
             {
-                // A. SI YA EXISTE -> LO QUITAMOS (Dislike)
                 _context.PostLikes.Remove(existingLike);
                 await _context.SaveChangesAsync();
-                return false; // Indicamos que ahora NO tiene like
+                return false;
             }
             else
             {
-                // B. NO EXISTE -> LO CREAMOS (Like)
                 var newLike = new PostLike
                 {
                     PostId = postId,
@@ -150,7 +162,7 @@ namespace Negocio.Services
                 };
                 _context.PostLikes.Add(newLike);
                 await _context.SaveChangesAsync();
-                return true; // Indicamos que AHORA TIENE like
+                return true;
             }
         }
 
@@ -186,10 +198,13 @@ namespace Negocio.Services
         }
         public async Task<List<CommentDto>> GetComments(int postId)
         {
+            var postExists = await _context.Posts.AnyAsync(p => p.Id == postId && p.IsActive);
+            if (!postExists) throw new Exception("Post no encontrado.");
+
             return await _context.Comments
                 .Where(c => c.PostId == postId && c.IsActive)
                 .Include(c => c.Author)
-                .OrderBy(c => c.CreatedAt) // Los comentarios viejos primero (tipo chat)
+                .OrderBy(c => c.CreatedAt)
                 .Select(c => new CommentDto
                 {
                     Id = c.Id,
@@ -201,8 +216,56 @@ namespace Negocio.Services
                 })
                 .ToListAsync();
         }
-        //
 
+
+        // 7. ACTUALIZAR POST
+        public async Task<PostDto> UpdatePost(int postId, UpdatePostDto dto, int userId)
+        {
+            var post = await _context.Posts
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post == null) throw new Exception("Post no encontrado.");
+
+            // VALIDACIÓN DE AUTOR
+            if (post.AuthorId != userId)
+            {
+                throw new Exception("No tienes permiso para editar este post.");
+            }
+
+            // Actualizar datos
+            post.Content = dto.Content;
+            post.ImageUrl = dto.ImageUrl;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return ConvertToDto(post, userId);
+        }
+
+        // 8. BORRAR POST
+        public async Task DeletePost(int postId, int userId)
+        {
+            var post = await _context.Posts.FindAsync(postId);
+
+            if (post == null) throw new Exception("Post no encontrado.");
+
+            // VALIDACIÓN DE AUTOR
+            if (post.AuthorId != userId)
+            {
+                throw new Exception("No tienes permiso para eliminar este post.");
+            }
+
+            // SOFT DELETE
+            post.IsActive = false;
+            post.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
 
         // --- MÉTODOS PRIVADOS DE AYUDA ---
 
@@ -248,6 +311,13 @@ namespace Negocio.Services
                 .Select(l => l.PostId)
                 .ToListAsync();
 
+            // IDs de usuarios a los que sigo
+            // Traemos todos los IDs de la gente que sigo en una sola consulta rápida
+            var myFollowingIds = await _context.UserFollows
+                .Where(f => f.FollowerId == currentUserId)
+                .Select(f => f.FollowedId)
+                .ToListAsync();
+
             // 2. Mapeamos usando la lista que obtuvimos
             var dtoList = posts.Select(p =>
             {
@@ -257,6 +327,12 @@ namespace Negocio.Services
                 // AHORA le inyectamos la inteligencia social:
                 // Si el ID de este post está en mi "bolsa" de likes, entonces es TRUE.
                 dto.IsLikedByMe = myLikedPostIds.Contains(p.Id);
+
+               // El post es mio?
+                dto.IsMine = p.AuthorId == currentUserId;
+
+                // Si el autor está en mis seguidos -> true
+                dto.IsAuthorFollowedByMe = myFollowingIds.Contains(p.AuthorId);
 
                 // Opcional: Si quieres contadores reales (aunque cuidado con el rendimiento aquí)
                 // Para MVP está bien hacerlo así, para PRO se deberían guardar contadores en la tabla Posts.
@@ -295,6 +371,69 @@ namespace Negocio.Services
                 CommentsCount = 0,
                 IsLikedByMe = false
             };
+        }
+
+        public async Task<List<PostDto>> GetHomeFeed(int currentUserId, int page, int pageSize)
+        {
+            // 1. Obtener IDs de gente a la que sigo
+            var followingUserIds = await _context.UserFollows
+                .Where(f => f.FollowerId == currentUserId)
+                .Select(f => f.FollowedId)
+                .ToListAsync();
+
+            // 2. Obtener IDs de comunidades a las que pertenezco
+            var myCommunityIds = await _context.UserCommunities
+                .Where(uc => uc.UserId == currentUserId)
+                .Select(uc => uc.CommunityId)
+                .ToListAsync();
+
+            // 3. Incluir mi propio ID para ver mis posts también
+            followingUserIds.Add(currentUserId);
+
+            // 4. Construir la Query (Sin ejecutarla aún)
+            var query = _context.Posts
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .Where(p => p.IsActive)
+                .Where(p =>
+                    // Condición A: El autor es alguien a quien sigo
+                    followingUserIds.Contains(p.AuthorId) ||
+                    // Condición B: El post es de una comunidad mía
+                    (p.CommunityId.HasValue && myCommunityIds.Contains(p.CommunityId.Value))
+                )
+                .OrderByDescending(p => p.CreatedAt); // Orden cronológico inverso
+
+            // 5. Aplicar PAGINACIÓN (Skip y Take)
+            var pagedPosts = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // 6. Convertir a DTO (usando tu método existente)
+            return await ConvertListToDto(pagedPosts, currentUserId);
+        }
+
+        // POSTS DE UN AUTOR (Mis Posts)
+        public async Task<List<PostDto>> GetPostsByAuthor(int authorId, int currentUserId)
+        {
+            // Validamos que el autor exista y esté activo
+            bool authorExists = await _context.Users.AnyAsync(u => u.Id == authorId && u.IsActive);
+            if (!authorExists) throw new Exception("El usuario no existe.");
+
+            var posts = await _context.Posts
+                .Include(p => p.Author)
+                .Include(p => p.Community)
+                .Include(p => p.Event)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments)
+                .Where(p => p.IsActive && p.AuthorId == authorId) 
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            return await ConvertListToDto(posts, currentUserId);
         }
     }
 }

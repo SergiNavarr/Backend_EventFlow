@@ -9,10 +9,17 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Datos\Datos.csproj" />
 	</ItemGroup>
-
+	
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	
 	<ItemGroup>
 	  <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+	  <PackageReference Include="CloudinaryDotNet" Version="1.27.9" />
+	  <PackageReference Include="MailKit" Version="4.14.1" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+	  <PackageReference Include="SendGrid" Version="9.29.3" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
 	</ItemGroup>
 </Project>

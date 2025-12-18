@@ -20,6 +20,39 @@ namespace Negocio.Interfaces
 
         // 3. PERFIL
         // Recibe un ID y devuelve los datos públicos del usuario (incluyendo contadores de seguidores).
-        Task<UserProfileDto> GetById(int userId);
+        Task<UserProfileDto> GetById(int userId, int? currentUserId = null);
+
+        // 4. CAMBIO DE CONTRASEÑA
+        // Recibe el ID del usuario y los datos necesarios para el cambio de contraseña.
+        Task ChangePassword(int userId, ChangePasswordDto dto);
+
+        // 5. RECUPERAR CONTRASEÑA
+        // Recibe el email y devuelve un token para resetear la contraseña.
+        Task<string> GenerateRecoveryToken(ForgotPasswordDto dto);
+
+        // 6. RESETEAR CONTRASEÑA
+        // Recibe el token y la nueva contraseña para actualizarla en BD.
+        Task ResetPasswordWithToken(ResetPasswordDto dto);
+
+        // 7. ACTUALIZAR PERFIL
+        Task<UserProfileDto> UpdateUser(int userId, UserUpdateDto dto);
+
+        // 8. BORRADO LOGICO DE USUARIO
+        Task DeleteUser(int userId);
+
+        // 9. SEGUIR USUARIO
+        Task FollowUserAsync(int targetUserId, int currentUserId);
+
+        // 10. DEJAR DE SEGUIR
+        Task UnfollowUserAsync(int targetUserId, int currentUserId);
+
+        // 11. VER SEGUIDORES (Quién sigue al usuario X)
+        Task<List<UserSummaryDto>> GetFollowersAsync(int userId, int currentUserId);
+
+        // 12. VER SEGUIDOS (A quién sigue el usuario X)
+        Task<List<UserSummaryDto>> GetFollowingAsync(int userId, int currentUserId);
+
+        // 13. BUSCAR USUARIOS
+        Task<List<UserProfileDto>> SearchUsers(string query);
     }
 }

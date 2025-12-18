@@ -19,7 +19,7 @@ namespace Datos.DTOs
         [Required]
         public DateTime StartDateTime { get; set; }
 
-        public DateTime? EndDateTime { get; set; } // Puede no tener fin definido
+        public DateTime? EndDateTime { get; set; }
 
         [Required(ErrorMessage = "La ubicación o URL es obligatoria")]
         public string Location { get; set; }
@@ -28,10 +28,8 @@ namespace Datos.DTOs
 
         public string? CoverImageUrl { get; set; }
 
-        // Capacidad máxima de asistentes (null = ilimitado)
         public int? MaxAttendees { get; set; }
 
-        // OPCIONAL: Si el evento se crea dentro de una comunidad
         public int? CommunityId { get; set; }
     }
 }

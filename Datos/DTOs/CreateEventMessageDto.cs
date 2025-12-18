@@ -7,14 +7,9 @@ using System.Threading.Tasks;
 
 namespace Datos.DTOs
 {
-    public class CreatePostDto
+    public class CreateEventMessageDto
     {
-        [Required(ErrorMessage = "El contenido no puede estar vacío")]
+        [Required]
         public string Content { get; set; }
-
-        public string? ImageUrl { get; set; }
-
-        public int? CommunityId { get; set; }
-        public int? EventId { get; set; }
     }
 }

@@ -6,16 +6,13 @@ using System.Threading.Tasks;
 
 namespace Datos.DTOs
 {
-    public class UserProfileDto
+    public class UserSummaryDto
     {
         public int Id { get; set; }
         public string Username { get; set; }
-        public string Email { get; set; } 
-        public string? Bio { get; set; }
         public string? AvatarUrl { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public int FollowersCount { get; set; }
-        public int FollowingCount { get; set; }
+        public string? Bio { get; set; }
+
         public bool IsFollowing { get; set; }
     }
 }

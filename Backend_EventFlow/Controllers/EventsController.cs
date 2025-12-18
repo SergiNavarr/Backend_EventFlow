@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace Backend_Eventflow.Controllers
 {
-    [Route("api/[controller]")] // Ruta: api/events
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize] 
     public class EventsController : ControllerBase
@@ -26,7 +26,7 @@ namespace Backend_Eventflow.Controllers
         {
             try
             {
-                // Obtenemos el ID del organizador (usuario logueado)
+                // Obtenemos el ID del organizador
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
                 var createdEvent = await _eventService.CreateEventAsync(dto, userId);
@@ -46,25 +46,34 @@ namespace Backend_Eventflow.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                int? currentUserId = null;
 
-                // Pasamos el userId para saber si el usuario YA está unido (MyRsvpStatus)
-                var evt = await _eventService.GetEventByIdAsync(id, userId);
+                var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                if (claimId != null && int.TryParse(claimId.Value, out int parsedId))
+                {
+                    currentUserId = parsedId;
+                }
+
+                var evt = await _eventService.GetEventByIdAsync(id, currentUserId);
+
                 return Ok(evt);
             }
             catch (Exception ex)
             {
-                return NotFound(new { message = ex.Message });
+                if (ex.Message.Contains("no encontrado")) return NotFound(new { message = ex.Message });
+                return StatusCode(500, new { message = "Error interno" });
             }
         }
 
-        // 3. BUSCAR / LISTAR
-        // GET: api/events?search=curso
-        [HttpGet]
-        public async Task<IActionResult> Search([FromQuery] string? search)
+        // 3. BUSCAR
+        // GET: api/events/search?query=concierto
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
         {
-            var events = await _eventService.SearchEventsAsync(search);
-            return Ok(events);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var results = await _eventService.SearchEvents(query, userId);
+            return Ok(results);
         }
 
         // 4. UNIRSE (JOIN)
@@ -99,6 +108,82 @@ namespace Backend_Eventflow.Controllers
                 await _eventService.LeaveEventAsync(id, userId);
 
                 return Ok(new { message = "Has salido del evento." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // 6. ACTUALIZAR EVENTO
+        // PUT: api/events/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDto dto)
+        {
+            try
+            {
+                // Sacamos el ID del usuario del Token
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                var updatedEvent = await _eventService.UpdateEventAsync(id, dto, userId);
+
+                return Ok(updatedEvent);
+            }
+            catch (Exception ex)
+            {
+                // Si el error es "No tienes permiso", deberíamos devolver 403, 
+                // pero por simplicidad usaremos BadRequest 
+                if (ex.Message.Contains("permiso")) return StatusCode(403, new { message = ex.Message });
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        //7. ELIMINAR EVENTO
+        // DELETE: api/events/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+                await _eventService.DeleteEventAsync(id, userId);
+
+                return Ok(new { message = "Evento eliminado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("permiso")) return StatusCode(403, new { message = ex.Message });
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // 8. MIS CREADOS
+        // GET: api/events/my-created
+        [HttpGet("my-created")]
+        public async Task<IActionResult> GetMyCreated()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var events = await _eventService.GetMyCreatedEvents(userId);
+                return Ok(events);
+            }
+            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
+        //9. OBTENER EVENTOS DEL CALENDARIO DEL USUARIO
+        // GET: api/events/calendar
+        [HttpGet("calendar")]
+        public async Task<IActionResult> GetMyCalendar()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                var events = await _eventService.GetMyCalendarEventsAsync(userId);
+                return Ok(events);
             }
             catch (Exception ex)
             {

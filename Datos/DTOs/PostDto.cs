@@ -30,5 +30,13 @@ namespace Datos.DTOs
 
         // Estado del usuario actual
         public bool IsLikedByMe { get; set; }
-    }
+
+        // true = Ya lo sigo (No mostrar botón o mostrar "Dejar de seguir")
+        // false = No lo sigo (Mostrar botón "Seguir")
+        public bool IsAuthorFollowedByMe { get; set; }
+
+        //¿Este post es mío?
+        public bool IsMine { get; set; }
+
+        }
 }

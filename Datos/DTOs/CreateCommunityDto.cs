@@ -17,7 +17,6 @@ namespace Datos.DTOs
         [MaxLength(500, ErrorMessage = "La descripción no puede superar los 500 caracteres")]
         public string Description { get; set; }
 
-        // Opcional: URL de la imagen de portada (si el usuario no sube nada, quedará null)
         public string? CoverImageUrl { get; set; }
     }
 }

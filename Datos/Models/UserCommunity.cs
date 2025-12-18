@@ -14,7 +14,6 @@ namespace Datos.Models
         public int CommunityId { get; set; }
         public Community Community { get; set; } = null!;
 
-        // Rol en la comunidad: "Member", "Moderator", "Admin"
         public string Role { get; set; } = "Member";
 
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;

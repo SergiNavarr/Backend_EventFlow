@@ -19,7 +19,7 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(
                 "http://localhost:3000",
-                "eventflow-opal.vercel.app"
+                "https://eventflow-opal.vercel.app"
                 )
                   .AllowAnyHeader()
                   .AllowAnyMethod()

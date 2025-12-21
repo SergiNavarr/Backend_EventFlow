@@ -17,10 +17,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowNextApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000") // La URL exacta de tu frontend
+            policy.WithOrigins(
+                "http://localhost:3000",
+                "eventflow-opal.vercel.app"
+                )
                   .AllowAnyHeader()
                   .AllowAnyMethod()
-                  .AllowCredentials(); // Importante si usas cookies o headers de auth
+                  .AllowCredentials();
         });
 });
 
@@ -49,8 +52,8 @@ builder.Services.AddAuthentication(config => {
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
-        ValidateIssuer = false, // Por ahora false para facilitar pruebas locales
-        ValidateAudience = false // Por ahora false para facilitar pruebas locales
+        ValidateIssuer = false,
+        ValidateAudience = false
     };
 });
 
